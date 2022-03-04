@@ -57,6 +57,9 @@ void setup_app(void)
 	/**************************************************************/
 	g_enable_ble = true;
 	api_set_version(1, 0, 2);
+	// Initalize Display here, went want info now!
+	// TODO: Can I init even sooner than this?
+	display_init();
 }
 
 /**
@@ -112,11 +115,14 @@ bool init_app(void)
  */
 void app_event_handler(void)
 {
+	// Hook the Mapper firmwares event handler
+	ftester_event_handler();
+
 	// Timer triggered event
 	if ((g_task_event_type & STATUS) == STATUS)
 	{
 		g_task_event_type &= N_STATUS;
-
+		
 		MYLOG("APP", "Timer wakeup");
 		if (g_ble_uart_is_connected)
 		{
@@ -157,6 +163,10 @@ void app_event_handler(void)
 			if (poll_gnss(gnss_option))
 			{
 				MYLOG("APP", "Valid GNSS position acquired");
+
+				//Hook for Field Tester
+				ftester_gps_fix = true;
+
 				if (g_ble_uart_is_connected)
 				{
 					g_ble_uart.print("Valid GNSS position acquired\n");
@@ -227,6 +237,10 @@ void app_event_handler(void)
 			else
 			{
 				MYLOG("APP", "No valid GNSS position");
+
+				//Hook for Field Tester
+				ftester_gps_fix = false;
+
 				if (g_ble_uart_is_connected)
 				{
 					g_ble_uart.print("No valid GNSS position\n");
@@ -352,6 +366,11 @@ void lora_data_handler(void)
 		/**************************************************************/
 		/**************************************************************/
 		g_task_event_type &= N_LORA_DATA;
+
+		// Hook LoRa Data FieldTester
+		// Event already exists
+		ftester_lora_data_handler();
+
 		MYLOG("APP", "Received package over LoRa");
 		if (g_ble_uart_is_connected)
 		{

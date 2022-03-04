@@ -19,6 +19,9 @@
 /** Include the WisBlock-API */
 #include <WisBlock-API.h> // Click to install library: http://librarymanager/All#WisBlock-API
 
+//JSON
+#include "RSJparser.tcc"
+
 // Debug output set to 0 to disable app debug output
 #ifndef MY_DEBUG
 #define MY_DEBUG 1
@@ -45,6 +48,12 @@ void ble_data_handler(void) __attribute__((weak));
 void lora_data_handler(void);
 void lora_tx_finished(bool success);
 void lora_rx_failed(void);
+// Field Mapper
+void display_init(void);
+void ftester_event_handler(void);
+void ftester_lora_data_handler(void);
+inline bool ftester_gps_fix = false;
+void ftester_gps_event(void);
 
 /** Examples for application events */
 #define ACC_TRIGGER 0b1000000000000000
