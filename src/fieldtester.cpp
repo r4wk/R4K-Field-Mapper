@@ -6,6 +6,10 @@
  * @date 2022-02-15
  * 
  * @copyright Copyright (c) 2022
+ * TODO: Detect display so can still work without working/connected display
+ *       Battery level indicator
+ *       Use proper icons?
+ *       Visual for direction of newest line
  * 
  */
 
@@ -21,7 +25,11 @@ std::vector<std::string> displayBuffer;
 
 /**
  * @brief Redraw display.
- * 
+ * Firmware version
+ * Helium network status
+ * GPS fix status
+ * Battery level indicator
+ * Display buffer
  */
 void refreshDisplay(void)
 {
@@ -30,6 +38,22 @@ void refreshDisplay(void)
 	u8g2.drawStr(0, 5, "R4K FTester v0.1");
     if(g_join_result) {u8g2.drawStr(98, 5, "(H)");}
     if(ftester_gps_fix) {u8g2.drawStr(110, 5, "(GPS)");}
+    int battLevel = read_batt() / 10;
+    u8g2.setFont(u8g2_font_siji_t_6x10);
+    // This is probably all wrong
+    // and highly inaccurate, plz forgive
+    if(battLevel > 370)
+    {
+        // Batt greater than 3.7v?
+        u8g2.drawGlyph(68, 6, 0xe086);
+    } else if(battLevel < 330) {
+        // Batt less than 3.3v?
+        u8g2.drawGlyph(68, 6, 0xe085);
+    } else if (battLevel < 290) {
+        // Batt lass than 2.9v?
+        u8g2.drawGlyph(68, 6, 0xe084);
+    }
+    u8g2.setFont(u8g2_font_micro_mr);
     u8g2.drawLine(0, 6, 128, 6);
 
     int size = displayBuffer.size();
@@ -74,7 +98,7 @@ void sendToDisplay(std::string s)
 void display_init(void)
 {
     u8g2.begin();
-    refreshDisplay();
+    sendToDisplay("Trying to join Helium Netowrk.");
     ftester_gps_event();
 }
 
@@ -162,4 +186,13 @@ void ftester_lora_data_handler(void)
         sendToDisplay(hsNameUP);
         sendToDisplay(combined);
     }
+}
+
+/**
+ * @brief Mapper is sending beacon
+ * 
+ */
+void ftester_tx_beacon(void)
+{
+    sendToDisplay("Sending Beacon!");
 }

@@ -204,6 +204,9 @@ void app_event_handler(void)
 					g_ble_uart.printf("Batt 2: %02X\n", g_mapper_data.batt_2);
 				}
 
+				// Hook for Field Tester
+				ftester_tx_beacon();
+				
 				lmh_error_status result = send_lora_packet((uint8_t *)&g_mapper_data, MAPPER_DATA_LEN);
 				switch (result)
 				{

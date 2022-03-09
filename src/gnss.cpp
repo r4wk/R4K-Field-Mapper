@@ -106,7 +106,7 @@ bool poll_gnss(uint8_t gnss_option)
 			g_ble_uart.print("Polling RAK1910\n");
 		}
 
-		// Hook for Field tester
+		// Hook for Field Tester
 		ftester_gps_event();
 
 		while ((millis() - time_out) < 10000)

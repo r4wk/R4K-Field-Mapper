@@ -54,6 +54,7 @@ void ftester_event_handler(void);
 void ftester_lora_data_handler(void);
 inline bool ftester_gps_fix = false;
 void ftester_gps_event(void);
+void ftester_tx_beacon(void);
 
 /** Examples for application events */
 #define ACC_TRIGGER 0b1000000000000000
