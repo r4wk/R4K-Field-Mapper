@@ -22,6 +22,8 @@
 U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R2);
 // Vector string array for display. MAX 9 lines Y. MAX 32 characters X.
 std::vector<std::string> displayBuffer;
+// Timer to put display to sleep, mostly to save burn in
+SoftwareTimer displayTimeoutTimer;
 
 /**
  * @brief Redraw display.
@@ -36,22 +38,23 @@ void refreshDisplay(void)
     u8g2.clearBuffer();
 	u8g2.setFont(u8g2_font_micro_mr);
 	u8g2.drawStr(0, 5, "R4K FTester v0.1");
-    if(g_join_result) {u8g2.drawStr(98, 5, "(H)");}
-    if(ftester_gps_fix) {u8g2.drawStr(110, 5, "(GPS)");}
+    if(g_join_result) {u8g2.drawStr(88, 5, "(H)");}
+    if(ftester_gps_fix) {u8g2.drawStr(68, 5, "(GPS)");}
     int battLevel = read_batt() / 10;
-    u8g2.setFont(u8g2_font_siji_t_6x10);
+    
     // This is probably all wrong
     // and highly inaccurate, plz forgive
+    u8g2.setFont(u8g2_font_siji_t_6x10);
     if(battLevel > 370)
     {
         // Batt greater than 3.7v?
-        u8g2.drawGlyph(68, 6, 0xe086);
+        u8g2.drawGlyph(118, 6, 0xe086);
     } else if(battLevel < 330) {
         // Batt less than 3.3v?
-        u8g2.drawGlyph(68, 6, 0xe085);
+        u8g2.drawGlyph(118, 6, 0xe085);
     } else if (battLevel < 290) {
         // Batt lass than 2.9v?
-        u8g2.drawGlyph(68, 6, 0xe084);
+        u8g2.drawGlyph(118, 6, 0xe084);
     }
     u8g2.setFont(u8g2_font_micro_mr);
     u8g2.drawLine(0, 6, 128, 6);
@@ -92,12 +95,25 @@ void sendToDisplay(std::string s)
 }
 
 /**
+ * @brief Put display into Power Saver mode
+ * Mostly to save burn in
+ * 
+ * @param unused 
+ */
+void ftester_display_sleep(TimerHandle_t unused)
+{
+    u8g2.setPowerSave(true);
+}
+
+/**
  * @brief Initialize Display here
  * 
  */
 void display_init(void)
 {
     u8g2.begin();
+    displayTimeoutTimer.begin(30000, ftester_display_sleep);
+    displayTimeoutTimer.start();
     sendToDisplay("Trying to join Helium Netowrk.");
     ftester_gps_event();
 }
@@ -136,6 +152,7 @@ void ftester_event_handler(void)
 
 /**
  * @brief Field Testers LoRa Data handler
+ * Parse incoming(RX) JSON data from LLIS
  * 
  */
 void ftester_lora_data_handler(void)
@@ -189,10 +206,21 @@ void ftester_lora_data_handler(void)
 }
 
 /**
- * @brief Mapper is sending beacon
+ * @brief Mapper is sending beacon(packet)
  * 
  */
 void ftester_tx_beacon(void)
 {
     sendToDisplay("Sending Beacon!");
+}
+
+/**
+ * @brief Field Tester accelerometer event
+ * Turn off power saver mode and start timeout again
+ * 
+ */
+void ftester_acc_event(void)
+{
+    u8g2.setPowerSave(false);
+    displayTimeoutTimer.start();
 }
