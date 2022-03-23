@@ -263,9 +263,6 @@ void app_event_handler(void)
 	if ((g_task_event_type & ACC_TRIGGER) == ACC_TRIGGER &&  g_lpwan_has_joined)
 	{
 		g_task_event_type &= N_ACC_TRIGGER;
-
-		// Hook for Field Tester
-		ftester_acc_event();
 		
 		MYLOG("APP", "ACC triggered");
 		if (g_ble_uart_is_connected)
@@ -374,7 +371,7 @@ void lora_data_handler(void)
 		/**************************************************************/
 		g_task_event_type &= N_LORA_DATA;
 
-		// Hook LoRa Data FieldTester
+		// Hook LoRa Data Field Tester
 		// Event already exists
 		ftester_lora_data_handler();
 
