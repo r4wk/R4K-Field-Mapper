@@ -1,1 +1,1 @@
-Do you wanna contribute to @HeliumMapping with the #WisBlock? Check out [the Wiki](https://github.com/rakstars/WisBlock-RAK4631-Helium-Mapper/wiki/Make-a-Helium-Mapper-with-the-WisBlock) with a detailed step-by-step to make your Helium Mapper!🗺️
+R4K Field Tester - Create Helium Field Tester out of RAK WisBlock modules.🗺️
