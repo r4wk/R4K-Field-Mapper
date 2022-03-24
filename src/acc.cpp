@@ -111,8 +111,6 @@ void acc_int_callback(void)
 {
 	g_task_event_type |= ACC_TRIGGER;
     MYLOG("ACC", "interrupt callback");
-	// Hook for Field Tester
-	ftester_acc_event();
 	xSemaphoreGiveFromISR(g_task_sem, pdFALSE);
 }
 

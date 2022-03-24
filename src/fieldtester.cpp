@@ -11,14 +11,17 @@
  *       Use proper icons?
  *       Visual for direction of newest line (?)
  *       Add more to MYLOG()
+ *       Use TinyGPS to calculate distance between tester and hotspot
  * 
  */
 
 #include <app.h>
 #include <U8g2lib.h>
 #include <algorithm>
+#include <iostream>
+#include <sstream>
 
-// Instance for display object
+// Instance for display object (RENDER UPSIDE DOWN)
 U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R2);
 // Vector string array for display. MAX 9 lines Y. MAX 32 characters X.
 std::vector<std::string> displayBuffer;
@@ -29,10 +32,8 @@ bool once = true;
 // Bool to keep track if display is on/off
 bool displayOn = true;
 // Vars to keep track of beacons
-int8_t txCount = 0;
-int8_t rxCount = 0;
-// TinyGPS instance for calculations
-TinyGPSPlus tinyGPS;
+int32_t txCount = 0;
+int32_t rxCount = 0;
 
 /**
  * @brief Redraw info bar and display buffer with up to date info.
@@ -209,6 +210,7 @@ void ftester_lora_data_handler(void)
     std::string hexString = std::string(log_buff);
     std::string::iterator end_pos = std::remove(hexString.begin(), hexString.end(), ' ');
     hexString.erase(end_pos, hexString.end());
+
     size_t len = hexString.length();
     for(int i = 0; i < len; i+=2)
     {
@@ -220,7 +222,6 @@ void ftester_lora_data_handler(void)
     RSJresource json_Obj (jsonString);
 
     size_t jsonlen = json_Obj.as_array().size();
-
     for(int j = 0; j < jsonlen; j++)
     {
         std::string hsNameUP = json_Obj[j]["name"].as_str();
@@ -236,6 +237,7 @@ void ftester_lora_data_handler(void)
                 txCount = 0;
                 sendToDisplay("Resetting RX/TX Beacon Count!");
             }
+
             std::string txrssi = json_Obj[j]["rssi"].as_str();
             std::string txsnr = json_Obj[j]["snr"].as_str();
             txsnr.resize(4);
@@ -301,5 +303,4 @@ void ftester_acc_event(void)
         displayTimeoutTimer.start();
         refreshDisplay();
     }
-    clear_acc_int();
 }
