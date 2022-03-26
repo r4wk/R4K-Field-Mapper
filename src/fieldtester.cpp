@@ -9,7 +9,6 @@
  * TODO: Detect display so can still work without working/connected display
  *       Battery level indicator (Needs tweaking)
  *       Use proper icons?
- *       Visual for direction of newest line (?)
  *       Add more to MYLOG()
  *       Use TinyGPS to calculate distance between tester and hotspot
  * 
@@ -34,6 +33,8 @@ bool displayOn = true;
 // Vars to keep track of beacons
 int32_t txCount = 0;
 int32_t rxCount = 0;
+// Var to hold battery level, so I'm not constantly polling
+int8_t battLevel = 0;
 
 /**
  * @brief Redraw info bar and display buffer with up to date info.
@@ -61,7 +62,6 @@ void refreshDisplay(void)
     std::string txc = std::to_string(txCount).c_str();
     u8g2.drawStr(78, 5,  (rxc + "/" + txc).c_str());
 
-    int battLevel = mv_to_percent(read_batt());
     std::string battString = std::to_string(battLevel) + "%";
     u8g2.drawStr(110, 5,  battString.c_str());
 
@@ -143,6 +143,7 @@ void display_init(void)
     u8g2.begin();
     displayTimeoutTimer.begin(30000, ftester_display_sleep);
     displayTimeoutTimer.start();
+    battLevel = mv_to_percent(read_batt());
     sendToDisplay("Trying to join Helium Netowrk.");
 }
 
@@ -194,10 +195,14 @@ void ftester_event_handler(void)
 /**
  * @brief Field Testers LoRa Data handler
  * Parse incoming(RX) JSON data from LLIS
+ * Convert from HEX to string
+ * Build JSON obj
+ * Iterate through JSON obj
  * 
  */
 void ftester_lora_data_handler(void)
 {
+    // Convert RX data buffer to char
     char log_buff[g_rx_data_len * 3] = {0};
     uint8_t log_idx = 0;
     for (int idx = 0; idx < g_rx_data_len; idx++)
@@ -208,9 +213,11 @@ void ftester_lora_data_handler(void)
 
     std::string jsonString;
     std::string hexString = std::string(log_buff);
+    // Remove spaces
     std::string::iterator end_pos = std::remove(hexString.begin(), hexString.end(), ' ');
     hexString.erase(end_pos, hexString.end());
 
+    // Convert from HEX to "text" to build JSON string
     size_t len = hexString.length();
     for(int i = 0; i < len; i+=2)
     {
@@ -219,11 +226,14 @@ void ftester_lora_data_handler(void)
         jsonString.push_back(chr);
     }
 
+    // Build the actual JSON obj
     RSJresource json_Obj (jsonString);
 
+    // Iterate through the JSON obj for RX data
     size_t jsonlen = json_Obj.as_array().size();
     for(int j = 0; j < jsonlen; j++)
     {
+        // If there's no name, the packet got damaged
         std::string hsNameUP = json_Obj[j]["name"].as_str();
         if(!hsNameUP.empty())
         {
@@ -238,22 +248,30 @@ void ftester_lora_data_handler(void)
                 sendToDisplay("Resetting RX/TX Beacon Count!");
             }
 
+            // Get our TX signal quality
             std::string txrssi = json_Obj[j]["rssi"].as_str();
             std::string txsnr = json_Obj[j]["snr"].as_str();
+            // Cut off TX SNR for tiny display
             txsnr.resize(4);
 
+            // Clean up hot spot name for human readable
             hsNameUP.erase(
                 remove( hsNameUP.begin(), hsNameUP.end(), '\"' ),
                 hsNameUP.end()
             );
 
+            // Get our RX signal quality
             std::string rxsnr = std::to_string(g_last_snr);
+            std::string rxrssi = std::to_string(g_last_rssi);
+            // Cut off RX SNR for tiny display
             rxsnr.resize(4);
 
+            // Build signal info/string for display
             std::string txsnrc = txsnr.c_str();
             std::string rxsnrc = rxsnr.c_str();
-            std::string combined = (std::string("RSSI:") + std::to_string(g_last_rssi) + "/" + txrssi) + (" SNR: " + rxsnrc + "/" + txsnrc);
+            std::string combined = (std::string("RSSI:") + rxrssi + "/" + txrssi) + (" SNR: " + rxsnrc + "/" + txsnrc);
 
+            // Send everything to the display
             sendToDisplay(std::to_string(rxCount) + "." + hsNameUP);
             sendToDisplay(combined);
         } else {
@@ -290,6 +308,7 @@ void ftester_tx_beacon(void)
 /**
  * @brief Field Tester accelerometer event
  * Turn off power saver mode and start timeout again
+ * Check battery level when woke up
  * 
  */
 void ftester_acc_event(void)
@@ -301,6 +320,7 @@ void ftester_acc_event(void)
         u8g2.setPowerSave(false);
         displayOn = true;
         displayTimeoutTimer.start();
+        battLevel = mv_to_percent(read_batt());
         refreshDisplay();
     }
 }

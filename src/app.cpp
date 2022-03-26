@@ -266,6 +266,7 @@ void app_event_handler(void)
 
 		// Hook for Field Tester
 		ftester_acc_event();
+		MYLOG("R4K", "Triggering ACC Event");
 		
 		// Moved this check here so we don't need to be connected
 		// to Helium to trigger a Field Tester event.
