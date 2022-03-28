@@ -35,6 +35,7 @@ int32_t txCount = 0;
 int32_t rxCount = 0;
 // Var to hold battery level, so I'm not constantly polling
 int8_t battLevel = 0;
+bool pollBattOnce = true;
 
 /**
  * @brief Redraw info bar and display buffer with up to date info.
@@ -143,7 +144,6 @@ void display_init(void)
     u8g2.begin();
     displayTimeoutTimer.begin(30000, ftester_display_sleep);
     displayTimeoutTimer.start();
-    battLevel = mv_to_percent(read_batt());
     sendToDisplay("Trying to join Helium Netowrk.");
 }
 
@@ -160,16 +160,16 @@ void ftester_gps_event(void)
     {
         if(once) 
         {
-        sendToDisplay("GPS satellites found!");
+            sendToDisplay("GPS satellites found!");
             once = false;
         }
     } else {
         if(!once)
         {
             sendToDisplay("Lost GPS fix.");
-    } else {
-        sendToDisplay("Searching for GPS satellites.");
-    }
+        } else {
+            sendToDisplay("Searching for GPS satellites.");
+        }
         once = true;
     }
 }
@@ -187,8 +187,18 @@ void ftester_event_handler(void)
         {
             sendToDisplay("Joined Helium Network!");
         } else {
+            // Need to move this, to a different event.
+            // Can we even detect this?
             sendToDisplay("Lost Helium Network!");
         }
+    }
+
+    // Safe to do this for the first time here
+    // Event system is online
+    if(pollBattOnce)
+    {
+        battLevel = mv_to_percent(read_batt());
+        pollBattOnce = false;
     }
 }
 
