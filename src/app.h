@@ -56,6 +56,7 @@ inline bool ftester_gps_fix = false;
 void ftester_gps_event(void);
 void ftester_tx_beacon(void);
 void ftester_acc_event(void);
+void ftester_setGPSData(int64_t lat, int64_t lon);
 
 /** Examples for application events */
 #define ACC_TRIGGER 0b1000000000000000
@@ -74,6 +75,8 @@ extern BaseType_t g_higher_priority_task_woken;
 #include <SparkFun_u-blox_GNSS_Arduino_Library.h>	// RAK12500_GNSS
 uint8_t init_gnss(void);
 bool poll_gnss(uint8_t gnss_option);
+// Field Mapper
+extern TinyGPSPlus my_rak1910_gnss;
 
 /** Accelerometer stuff */
 #include <SparkFunLIS3DH.h>

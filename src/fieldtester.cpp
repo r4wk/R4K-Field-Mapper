@@ -10,7 +10,6 @@
  *       Battery level indicator (Needs tweaking)
  *       Use proper icons?
  *       Add more to MYLOG()
- *       Use TinyGPS to calculate distance between tester and hotspot
  * 
  */
 
@@ -22,7 +21,7 @@
 
 // Instance for display object (RENDER UPSIDE DOWN)
 U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R2);
-// Vector string array for display. MAX 9 lines Y. MAX 32 characters X.
+// Vector string array for display. MAX 9 lines Y. MAX 32 characters X
 std::vector<std::string> displayBuffer;
 // Timer to put display to sleep, mostly to save burn in
 SoftwareTimer displayTimeoutTimer;
@@ -36,9 +35,14 @@ int32_t rxCount = 0;
 // Var to hold battery level, so I'm not constantly polling
 int8_t battLevel = 0;
 bool pollBattOnce = true;
+// Vars for field tester lat/long
+double ftester_lat = 0;
+double ftester_long = 0;
+// Var for GPS sat count
+int8_t ftester_satCount = 0;
 
 /**
- * @brief Redraw info bar and display buffer with up to date info.
+ * @brief Redraw info bar and display buffer with up to date info
  * TODO: Space out icons better
  * 
  * Firmware version
@@ -56,33 +60,19 @@ void refreshDisplay(void)
 
 	u8g2.drawStr(0, 5, "R4K v0.2a");
 
-    if(ftester_gps_fix) {u8g2.drawStr(46, 5, "(GPS)");}
-    if(g_join_result) {u8g2.drawStr(66, 5, "(H)");}
+    u8g2.drawStr(38, 5, "(GPS)");
+    u8g2.drawStr(58, 5, std::to_string(ftester_satCount).c_str());
 
-    std::string rxc = std::to_string(rxCount).c_str();
-    std::string txc = std::to_string(txCount).c_str();
-    u8g2.drawStr(78, 5,  (rxc + "/" + txc).c_str());
+    if(g_join_result) 
+    {
+        u8g2.drawStr(68, 5, "(H)");
+        std::string rxc = std::to_string(rxCount).c_str();
+        std::string txc = std::to_string(txCount).c_str();
+        u8g2.drawStr(80, 5,  (rxc + "/" + txc).c_str());
+    }
 
     std::string battString = std::to_string(battLevel) + "%";
     u8g2.drawStr(110, 5,  battString.c_str());
-
-    // This is probably all wrong
-    // and highly inaccurate, plz forgive
-    // if(battLevel > 370)
-    // {
-    //     // Batt greater than 3.7v?
-    //     u8g2.setFont(u8g2_font_siji_t_6x10);
-    //     u8g2.drawGlyph(118, 6, 0xe086);
-    // } else if(battLevel < 330) {
-    //     // Batt less than 3.3v?
-    //     u8g2.setFont(u8g2_font_siji_t_6x10);
-    //     u8g2.drawGlyph(118, 6, 0xe085);
-    // } else if (battLevel < 290) {
-    //     // Batt lass than 2.9v?
-    //     u8g2.setFont(u8g2_font_siji_t_6x10);
-    //     u8g2.drawGlyph(118, 6, 0xe084);
-    // }
-    // u8g2.setFont(u8g2_font_micro_mr);
 
     u8g2.drawLine(0, 6, 128, 6);
 
@@ -95,7 +85,7 @@ void refreshDisplay(void)
 }
 
 /**
- * @brief Sends text to display.
+ * @brief Sends text to display
  * Went want to refresh everytime info is added
  * to the display so we have the most up to date
  * info.
@@ -150,12 +140,14 @@ void display_init(void)
 /**
  * @brief Field Tester GPS event handler
  * 
- * This needs to be completely reworked again.
- * Info for sat's found is very slow and behind, but does work.
+ * This needs to be completely reworked again
+ * Info for sat's found is very slow and behind, but does work
  * 
  */
 void ftester_gps_event(void)
 {
+    ftester_satCount = my_rak1910_gnss.satellites.value();
+
     if(ftester_gps_fix) 
     {
         if(once) 
@@ -186,8 +178,19 @@ void ftester_event_handler(void)
         if(g_join_result)
         {
             sendToDisplay("Joined Helium Network!");
+            // DEBUG TO MAKE SURE SCREEN TURNS ON
+            if(displayOn)
+            {
+                displayTimeoutTimer.start();
+            } else {
+                u8g2.setPowerSave(false);
+                displayOn = true;
+                displayTimeoutTimer.start();
+                battLevel = mv_to_percent(read_batt());
+                refreshDisplay();
+            }
         } else {
-            // Need to move this, to a different event.
+            // Need to move this, to a different event
             // Can we even detect this?
             sendToDisplay("Lost Helium Network!");
         }
@@ -261,7 +264,15 @@ void ftester_lora_data_handler(void)
             // Get our TX signal quality
             std::string txrssi = json_Obj[j]["rssi"].as_str();
             std::string txsnr = json_Obj[j]["snr"].as_str();
+            // Get hot spot lat/long
+            std::string hsLat = json_Obj[j]["lat"].as_str();
+            std::string hsLong = json_Obj[j]["long"].as_str();
+            double hsLatD = std::stod(hsLat);
+            double hsLongD = std::stod(hsLong);
+            double distM = my_rak1910_gnss.distanceBetween(ftester_lat, ftester_long, hsLatD, hsLongD);
+            int16_t distKM = round(distM / 1000);
             // Cut off TX SNR for tiny display
+            // Delete? I trim on web server now
             txsnr.resize(4);
 
             // Clean up hot spot name for human readable
@@ -274,19 +285,20 @@ void ftester_lora_data_handler(void)
             std::string rxsnr = std::to_string(g_last_snr);
             std::string rxrssi = std::to_string(g_last_rssi);
             // Cut off RX SNR for tiny display
+            // Shouldn't this be 3?
             rxsnr.resize(4);
 
             // Build signal info/string for display
             std::string txsnrc = txsnr.c_str();
             std::string rxsnrc = rxsnr.c_str();
-            std::string combined = (std::string("RSSI:") + rxrssi + "/" + txrssi) + (" SNR: " + rxsnrc + "/" + txsnrc);
+            std::string combined = (std::string("RSSI:") + rxrssi + "/" + txrssi) + (" SNR: " + rxsnrc + "/" + txsnrc) + ("~" + std::to_string(distKM) + "km");
 
             // Send everything to the display
             sendToDisplay(std::to_string(rxCount) + "." + hsNameUP);
             sendToDisplay(combined);
         } else {
-            // Bad/Damaged packet. Dropping info, network issues.
-            MYLOG("R4K", "Dropped packet: %s", hexString);
+            // Bad/Damaged packet. Dropping info, network issues
+            MYLOG("R4K", "Damaged packet");
             // DEBUG
             sendToDisplay("!EMPTY!");
         }
@@ -295,11 +307,11 @@ void ftester_lora_data_handler(void)
 
 /**
  * @brief Mapper is sending beacon(packet)
- * Keep count of how many beacons sent.
- * Max of 999 because of screen limitations.
+ * Keep count of how many beacons sent
+ * Max of 999 because of screen limitations
  * 
- * TODO: Store GPS co-ords on TX. Wait for RX to send back HS co-ords.
- *       Get distance to hot spot from beacon co-ords.
+ * TODO: Store GPS co-ords on TX. Wait for RX to send back HS co-ords
+ *       Get distance to hot spot from beacon co-ords
  * 
  */
 void ftester_tx_beacon(void)
@@ -333,4 +345,16 @@ void ftester_acc_event(void)
         battLevel = mv_to_percent(read_batt());
         refreshDisplay();
     }
+}
+
+/**
+ * @brief Set GPS data for device
+ * 
+ * @param lat 
+ * @param lon 
+ */
+void ftester_setGPSData(int64_t lat, int64_t lon)
+{
+    ftester_lat = lat / 100000.0;
+    ftester_long = lon / 100000.0;
 }

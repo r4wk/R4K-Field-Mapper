@@ -191,6 +191,9 @@ bool poll_gnss(uint8_t gnss_option)
 		MYLOG("GNSS", "Alt: %d m", altitude);
 		MYLOG("GNSS", "Acy: %.2f ", accuracy / 100.0);
 
+		// Hook for Field Tester
+		ftester_setGPSData(latitude, longitude);
+
 		if (g_ble_uart_is_connected)
 		{
 			g_ble_uart.printf("Lat: %.4fº Lon: %.4fº\n", latitude / 100000.0, longitude / 100000.0);
