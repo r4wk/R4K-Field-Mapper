@@ -324,7 +324,6 @@ void app_event_handler(void)
 			g_task_wakeup_timer.reset();
 		}
 	}
-
 }
 
 /**

@@ -7,9 +7,11 @@
  * 
  * @copyright Copyright (c) 2022
  * TODO: Detect display so can still work without working/connected display
- *       Battery level indicator (Needs tweaking)
  *       Use proper icons?
  *       Add more to MYLOG()
+ *       Add counter for how many hot spots heard beacon. Use JSON array to count this
+ *       Add RAK12500_GNSS compatibility
+ *       Kill some logic when display is off
  * 
  */
 
@@ -18,6 +20,7 @@
 #include <algorithm>
 #include <iostream>
 #include <sstream>
+#include <iomanip>
 
 // Instance for display object (RENDER UPSIDE DOWN)
 U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R2);
@@ -55,14 +58,19 @@ int8_t ftester_satCount = 0;
  */
 void refreshDisplay(void)
 {
+    // Clear screen and set font
     u8g2.clearBuffer();
 	u8g2.setFont(u8g2_font_micro_mr);
 
+    // Draw firmware version
 	u8g2.drawStr(0, 5, "R4K v0.2a");
 
+    // Draw GPS sat fix count
     u8g2.drawStr(38, 5, "(GPS)");
     u8g2.drawStr(58, 5, std::to_string(ftester_satCount).c_str());
 
+    // Draw Helium Join Status
+    // RX/TX Count
     if(g_join_result) 
     {
         u8g2.drawStr(68, 5, "(H)");
@@ -71,11 +79,13 @@ void refreshDisplay(void)
         u8g2.drawStr(80, 5,  (rxc + "/" + txc).c_str());
     }
 
+    // Draw battery % based on mv
     std::string battString = std::to_string(battLevel) + "%";
     u8g2.drawStr(110, 5,  battString.c_str());
 
     u8g2.drawLine(0, 6, 128, 6);
 
+    // Draw our display buffer
     int size = displayBuffer.size();
     for (int y = 0; y < size; y++) 
     {
@@ -95,17 +105,24 @@ void refreshDisplay(void)
  */
 void sendToDisplay(std::string s)
 {
+    // Get display buffer size
     int size = displayBuffer.size();
+    // MAX 9 lines Y
     if(size < 9)
     {
+        // MAX 32 characters X
         if(s.length() < 32)
         {
+            // Push the newest data to the back of array
             displayBuffer.push_back(s);
         } else {
+            // If text too long, resize the push to back
             s.resize(30);
             displayBuffer.push_back(s + "..");
         }
     } else {
+        // Erase oldest data and push newest to the back of array
+        // Shouldn't I resize X here too? 
         displayBuffer.erase(displayBuffer.begin());
         displayBuffer.push_back(s);
     }
@@ -132,6 +149,7 @@ void ftester_display_sleep(TimerHandle_t unused)
 void display_init(void)
 {
     u8g2.begin();
+    // Creater timer for display and start it (30 seconds)
     displayTimeoutTimer.begin(30000, ftester_display_sleep);
     displayTimeoutTimer.start();
     sendToDisplay("Trying to join Helium Netowrk.");
@@ -189,10 +207,6 @@ void ftester_event_handler(void)
                 battLevel = mv_to_percent(read_batt());
                 refreshDisplay();
             }
-        } else {
-            // Need to move this, to a different event
-            // Can we even detect this?
-            sendToDisplay("Lost Helium Network!");
         }
     }
 
@@ -264,16 +278,20 @@ void ftester_lora_data_handler(void)
             // Get our TX signal quality
             std::string txrssi = json_Obj[j]["rssi"].as_str();
             std::string txsnr = json_Obj[j]["snr"].as_str();
+
             // Get hot spot lat/long
             std::string hsLat = json_Obj[j]["lat"].as_str();
             std::string hsLong = json_Obj[j]["long"].as_str();
             double hsLatD = std::stod(hsLat);
             double hsLongD = std::stod(hsLong);
             double distM = my_rak1910_gnss.distanceBetween(ftester_lat, ftester_long, hsLatD, hsLongD);
-            int16_t distKM = round(distM / 1000);
-            // Cut off TX SNR for tiny display
-            // Delete? I trim on web server now
-            txsnr.resize(4);
+            double distKM = round((distM / 1000.0) * 10.0) / 10.0;
+            // Round to display 1 decial place only
+            std::ostringstream ossDist;
+            ossDist << std::setprecision(2) << std::noshowpoint << distKM;
+            //std::string distKMS = std::to_string(distKM);
+            std::string distKMS = ossDist.str();
+
 
             // Clean up hot spot name for human readable
             hsNameUP.erase(
@@ -282,25 +300,24 @@ void ftester_lora_data_handler(void)
             );
 
             // Get our RX signal quality
-            std::string rxsnr = std::to_string(g_last_snr);
+            // Round to display 1 decial place only
+            std::ostringstream ossSnr;
+            double rxsnrd = round(g_last_snr * 10.0) / 10.0;
+            ossSnr << std::setprecision(2) << std::noshowpoint << rxsnrd;
+            std::string rxsnr = ossSnr.str();
             std::string rxrssi = std::to_string(g_last_rssi);
-            // Cut off RX SNR for tiny display
-            // Shouldn't this be 3?
-            rxsnr.resize(4);
 
             // Build signal info/string for display
             std::string txsnrc = txsnr.c_str();
             std::string rxsnrc = rxsnr.c_str();
-            std::string combined = (std::string("RSSI:") + rxrssi + "/" + txrssi) + (" SNR: " + rxsnrc + "/" + txsnrc) + ("~" + std::to_string(distKM) + "km");
+            std::string combined = (std::string("RSSI:") + rxrssi + "/" + txrssi) + (" SNR: " + rxsnrc + "/" + txsnrc);
 
             // Send everything to the display
-            sendToDisplay(std::to_string(rxCount) + "." + hsNameUP);
+            sendToDisplay(std::to_string(rxCount) + "." + hsNameUP  + (" ~" + distKMS + "km"));
             sendToDisplay(combined);
         } else {
             // Bad/Damaged packet. Dropping info, network issues
             MYLOG("R4K", "Damaged packet");
-            // DEBUG
-            sendToDisplay("!EMPTY!");
         }
     }
 }
@@ -309,9 +326,6 @@ void ftester_lora_data_handler(void)
  * @brief Mapper is sending beacon(packet)
  * Keep count of how many beacons sent
  * Max of 999 because of screen limitations
- * 
- * TODO: Store GPS co-ords on TX. Wait for RX to send back HS co-ords
- *       Get distance to hot spot from beacon co-ords
  * 
  */
 void ftester_tx_beacon(void)
