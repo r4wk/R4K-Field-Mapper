@@ -28,6 +28,8 @@ U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R2);
 std::vector<std::string> displayBuffer;
 // Timer to put display to sleep, mostly to save burn in
 SoftwareTimer displayTimeoutTimer;
+// Timer to update battery level
+SoftwareTimer battTimer;
 // Bool to display GPS fix once per status change
 bool once = true;
 // Bool to keep track if display is on/off
@@ -37,7 +39,6 @@ int32_t txCount = 0;
 int32_t rxCount = 0;
 // Var to hold battery level, so I'm not constantly polling
 int8_t battLevel = 0;
-bool pollBattOnce = true;
 // Vars for field tester lat/long
 double ftester_lat = 0;
 double ftester_long = 0;
@@ -143,6 +144,29 @@ void ftester_display_sleep(TimerHandle_t unused)
 }
 
 /**
+ * @brief Get battery level from API
+ * 
+ * @return float 
+ */
+float ftester_getBattLevel()
+{
+    return mv_to_percent(read_batt());
+}
+
+/**
+ * @brief Used to update battery level in a timer
+ * 
+ * @param unused 
+ */
+void ftester_updateBattLevel(TimerHandle_t unused)
+{
+    if(displayOn)
+    {
+        battLevel = ftester_getBattLevel();
+    }
+}
+
+/**
  * @brief Initialize Display here
  * 
  */
@@ -152,6 +176,8 @@ void display_init(void)
     // Creater timer for display and start it (30 seconds)
     displayTimeoutTimer.begin(30000, ftester_display_sleep);
     displayTimeoutTimer.start();
+    battTimer.begin(20000, ftester_updateBattLevel, NULL, true);
+    battTimer.start();
     sendToDisplay("Trying to join Helium Netowrk.");
 }
 
@@ -204,18 +230,9 @@ void ftester_event_handler(void)
                 u8g2.setPowerSave(false);
                 displayOn = true;
                 displayTimeoutTimer.start();
-                battLevel = mv_to_percent(read_batt());
                 refreshDisplay();
             }
         }
-    }
-
-    // Safe to do this for the first time here
-    // Event system is online
-    if(pollBattOnce)
-    {
-        battLevel = mv_to_percent(read_batt());
-        pollBattOnce = false;
     }
 }
 
@@ -360,7 +377,6 @@ void ftester_acc_event(void)
         u8g2.setPowerSave(false);
         displayOn = true;
         displayTimeoutTimer.start();
-        battLevel = mv_to_percent(read_batt());
         refreshDisplay();
     }
 }
