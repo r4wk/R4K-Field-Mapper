@@ -96,7 +96,7 @@ void refreshDisplay(void)
 
 /**
  * @brief Sends text to display
- * Went want to refresh everytime info is added
+ * We want to refresh everytime info is added
  * to the display so we have the most up to date
  * info.
  * 
@@ -116,7 +116,7 @@ void sendToDisplay(std::string s)
             // Push the newest data to the back of array
             displayBuffer.push_back(s);
         } else {
-            // If text too long, resize the push to back
+            // If text too long, resize then push to back
             s.resize(30);
             displayBuffer.push_back(s + "..");
         }
@@ -285,13 +285,17 @@ void ftester_lora_data_handler(void)
             double hsLatD = std::stod(hsLat);
             double hsLongD = std::stod(hsLong);
             double distM = my_rak1910_gnss.distanceBetween(ftester_lat, ftester_long, hsLatD, hsLongD);
+            // Round and set precision to display 1 decimal place only
             double distKM = round((distM / 1000.0) * 10.0) / 10.0;
-            // Round to display 1 decial place only
             std::ostringstream ossDist;
             ossDist << std::setprecision(2) << std::noshowpoint << distKM;
-            //std::string distKMS = std::to_string(distKM);
-            std::string distKMS = ossDist.str();
-
+            std::string distKMS = "";
+            if(distKM <= 0)
+            {
+                distKMS = " <0.1km";
+            } else {
+                distKMS = " ~" + ossDist.str() + "km";
+            }
 
             // Clean up hot spot name for human readable
             hsNameUP.erase(
@@ -300,7 +304,7 @@ void ftester_lora_data_handler(void)
             );
 
             // Get our RX signal quality
-            // Round to display 1 decial place only
+            // Round and set precision to display 1 decimal place only
             std::ostringstream ossSnr;
             double rxsnrd = round(g_last_snr * 10.0) / 10.0;
             ossSnr << std::setprecision(2) << std::noshowpoint << rxsnrd;
@@ -313,7 +317,7 @@ void ftester_lora_data_handler(void)
             std::string combined = (std::string("RSSI:") + rxrssi + "/" + txrssi) + (" SNR: " + rxsnrc + "/" + txsnrc);
 
             // Send everything to the display
-            sendToDisplay(std::to_string(rxCount) + "." + hsNameUP  + (" ~" + distKMS + "km"));
+            sendToDisplay(std::to_string(rxCount) + "." + hsNameUP  + distKMS);
             sendToDisplay(combined);
         } else {
             // Bad/Damaged packet. Dropping info, network issues
