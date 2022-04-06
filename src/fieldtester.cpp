@@ -21,6 +21,8 @@
 #include <iostream>
 #include <sstream>
 #include <iomanip>
+#include <ArduinoJson.h>
+#include <vector>
 
 // Instance for display object (RENDER UPSIDE DOWN)
 U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R2);
@@ -162,7 +164,10 @@ void ftester_updateBattLevel(TimerHandle_t unused)
 {
     if(displayOn)
     {
+        // Batt level bouncies around a lot
+        // Smooth this out
         battLevel = ftester_getBattLevel();
+        refreshDisplay();
     }
 }
 
@@ -270,15 +275,16 @@ void ftester_lora_data_handler(void)
         jsonString.push_back(chr);
     }
 
-    // Build the actual JSON obj
-    RSJresource json_Obj (jsonString);
+    DynamicJsonDocument jsonObj(128);
+    DeserializationError error = deserializeJson(jsonObj, jsonString);
 
-    // Iterate through the JSON obj for RX data
-    size_t jsonlen = json_Obj.as_array().size();
-    for(int j = 0; j < jsonlen; j++)
+    if(error)
     {
+        MYLOG("R4K", "Deserialize error, bad data?");
+        return;
+    } else {
         // If there's no name, the packet got damaged
-        std::string hsNameUP = json_Obj[j]["name"].as_str();
+        std::string hsNameUP = jsonObj["name"];
         if(!hsNameUP.empty())
         {
             // RX Counter
@@ -293,12 +299,12 @@ void ftester_lora_data_handler(void)
             }
 
             // Get our TX signal quality
-            std::string txrssi = json_Obj[j]["rssi"].as_str();
-            std::string txsnr = json_Obj[j]["snr"].as_str();
+            std::string txrssi = jsonObj["rssi"];
+            std::string txsnr = jsonObj["snr"];
 
             // Get hot spot lat/long
-            std::string hsLat = json_Obj[j]["lat"].as_str();
-            std::string hsLong = json_Obj[j]["long"].as_str();
+            std::string hsLat = jsonObj["lat"];
+            std::string hsLong = jsonObj["long"];
             double hsLatD = std::stod(hsLat);
             double hsLongD = std::stod(hsLong);
             double distM = my_rak1910_gnss.distanceBetween(ftester_lat, ftester_long, hsLatD, hsLongD);
@@ -338,7 +344,7 @@ void ftester_lora_data_handler(void)
             sendToDisplay(combined);
         } else {
             // Bad/Damaged packet. Dropping info, network issues
-            MYLOG("R4K", "Damaged packet");
+            MYLOG("R4K", "Damaged/Bad JSON Data");
         }
     }
 }
@@ -377,6 +383,9 @@ void ftester_acc_event(void)
         u8g2.setPowerSave(false);
         displayOn = true;
         displayTimeoutTimer.start();
+        // Don't like this, dev will be doing 
+        // something usually on a wake up
+        battLevel = ftester_getBattLevel();
         refreshDisplay();
     }
 }
