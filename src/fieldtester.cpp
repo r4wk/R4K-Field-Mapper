@@ -275,13 +275,12 @@ void ftester_lora_data_handler(void)
         jsonString.push_back(chr);
     }
 
-    DynamicJsonDocument jsonObj(128);
+    DynamicJsonDocument jsonObj(256);
     DeserializationError error = deserializeJson(jsonObj, jsonString);
 
     if(error)
     {
         MYLOG("R4K", "Deserialize error, bad data?");
-        return;
     } else {
         // If there's no name, the packet got damaged
         std::string hsNameUP = jsonObj["name"];
