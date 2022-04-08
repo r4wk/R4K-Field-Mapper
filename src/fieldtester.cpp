@@ -142,6 +142,8 @@ void sendToDisplay(std::string s)
 void ftester_display_sleep(TimerHandle_t unused)
 {
     u8g2.setPowerSave(true);
+    displayTimeoutTimer.stop();
+    battTimer.stop();
     displayOn = false;
 }
 
@@ -152,7 +154,10 @@ void ftester_display_sleep(TimerHandle_t unused)
  */
 float ftester_getBattLevel()
 {
-    return mv_to_percent(read_batt());
+    if(displayOn)
+    {
+        return mv_to_percent(read_batt());
+    }
 }
 
 /**
@@ -181,7 +186,7 @@ void display_init(void)
     // Creater timer for display and start it (30 seconds)
     displayTimeoutTimer.begin(30000, ftester_display_sleep);
     displayTimeoutTimer.start();
-    battTimer.begin(20000, ftester_updateBattLevel, NULL, true);
+    battTimer.begin(19500, ftester_updateBattLevel, NULL, true);
     battTimer.start();
     sendToDisplay("Trying to join Helium Netowrk.");
 }
@@ -230,12 +235,12 @@ void ftester_event_handler(void)
             // DEBUG TO MAKE SURE SCREEN TURNS ON
             if(displayOn)
             {
-                displayTimeoutTimer.start();
+                displayTimeoutTimer.reset();
             } else {
                 u8g2.setPowerSave(false);
                 displayOn = true;
-                displayTimeoutTimer.start();
-                refreshDisplay();
+                displayTimeoutTimer.reset();
+                battTimer.reset();
             }
         }
     }
@@ -314,9 +319,9 @@ void ftester_lora_data_handler(void)
             std::string distKMS = "";
             if(distKM <= 0)
             {
-                distKMS = " <0.1km";
+                distKMS = "<0.1km";
             } else {
-                distKMS = " ~" + ossDist.str() + "km";
+                distKMS = " " + ossDist.str() + "km";
             }
 
             // Clean up hot spot name for human readable
@@ -370,22 +375,20 @@ void ftester_tx_beacon(void)
 /**
  * @brief Field Tester accelerometer event
  * Turn off power saver mode and start timeout again
- * Check battery level when woke up
  * 
  */
 void ftester_acc_event(void)
 {
     if(displayOn)
     {
-        displayTimeoutTimer.start();
+        // Keep display on
+        displayTimeoutTimer.reset();
     } else {
+        // Screen is off, wake up
         u8g2.setPowerSave(false);
         displayOn = true;
-        displayTimeoutTimer.start();
-        // Don't like this, dev will be doing 
-        // something usually on a wake up
-        battLevel = ftester_getBattLevel();
-        refreshDisplay();
+        displayTimeoutTimer.reset();
+        battTimer.reset();
     }
 }
 
