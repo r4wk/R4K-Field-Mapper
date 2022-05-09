@@ -9,43 +9,37 @@
  * TODO: Detect display so can still work without working/connected display
  *       Use proper icons?
  *       Add more to MYLOG()
- *       Add counter for how many hot spots heard beacon. Use JSON array to count this
  *       Add RAK12500_GNSS compatibility
  *       Kill some logic when display is off
  * 
  */
 
 #include <app.h>
-#include <U8g2lib.h>
-#include <algorithm>
-#include <iostream>
-#include <sstream>
-#include <iomanip>
-#include <ArduinoJson.h>
-#include <vector>
 
-// Instance for display object (RENDER UPSIDE DOWN)
-U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R2);
 // Vector string array for display. MAX 9 lines Y. MAX 32 characters X
 std::vector<std::string> displayBuffer;
+// Keep track of beacons
+int32_t txCount = 0;
+int32_t rxCount = 0;
+// Battery level
+int8_t battLevel = 0;
+// Is display is on/off
+bool displayOn = true;
 // Timer to put display to sleep, mostly to save burn in
 SoftwareTimer displayTimeoutTimer;
 // Timer to update battery level
 SoftwareTimer battTimer;
-// Bool to display GPS fix once per status change
-bool once = true;
-// Bool to keep track if display is on/off
-bool displayOn = true;
-// Vars to keep track of beacons
-int32_t txCount = 0;
-int32_t rxCount = 0;
-// Var to hold battery level, so I'm not constantly polling
-int8_t battLevel = 0;
-// Vars for field tester lat/long
-double ftester_lat = 0;
-double ftester_long = 0;
-// Var for GPS sat count
+// Field tester lat/long
+double ftester_lat = 0.0;
+double ftester_long = 0.0;
+// GPS sat count/fix status
 int8_t ftester_satCount = 0;
+bool ftester_gpsLock = false;
+// Is field tester busy
+bool ftester_busy = false;
+
+// Instance for display object (RENDER UPSIDE DOWN)
+U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R2);
 
 /**
  * @brief Redraw info bar and display buffer with up to date info
@@ -61,40 +55,51 @@ int8_t ftester_satCount = 0;
  */
 void refreshDisplay(void)
 {
-    // Clear screen and set font
-    u8g2.clearBuffer();
-	u8g2.setFont(u8g2_font_micro_mr);
-
-    // Draw firmware version
-	u8g2.drawStr(0, 5, "R4K v0.2a");
-
-    // Draw GPS sat fix count
-    u8g2.drawStr(38, 5, "(GPS)");
-    u8g2.drawStr(58, 5, std::to_string(ftester_satCount).c_str());
-
-    // Draw Helium Join Status
-    // RX/TX Count
-    if(g_join_result) 
+    if(displayOn)
     {
-        u8g2.drawStr(68, 5, "(H)");
-        std::string rxc = std::to_string(rxCount).c_str();
-        std::string txc = std::to_string(txCount).c_str();
-        u8g2.drawStr(80, 5,  (rxc + "/" + txc).c_str());
+        // Clear screen
+        u8g2.clearBuffer();
+
+        // Draw firmware version
+        u8g2.drawStr(0, 5, "R4K v0.3a");
+
+        // Draw GPS sat fix count
+        u8g2.drawStr(38, 5, "(GPS)");
+        u8g2.drawStr(58, 5, std::to_string(ftester_satCount).c_str());
+
+        // Draw Helium Join Status
+        // RX/TX Count
+        if(g_join_result) 
+        {
+            u8g2.drawStr(68, 5, "(H)");
+            std::string count = std::to_string(rxCount) + "/" + std::to_string(txCount);
+            u8g2.drawStr(80, 5,  count.c_str());
+        }
+
+        // Draw battery level based on mv
+        u8g2.setFont(u8g2_font_siji_t_6x10);
+        if(battLevel >= 55)
+        {
+            u8g2.drawGlyph(115, 6, 0xe086);
+        } else if(battLevel < 55 && battLevel >= 25)
+        {
+            u8g2.drawGlyph(115, 6, 0xe085);
+        } else if(battLevel < 25)
+        {
+            u8g2.drawGlyph(115, 6, 0xe084);
+        }
+        u8g2.setFont(u8g2_font_micro_mr);
+
+        u8g2.drawLine(0, 6, 128, 6);
+
+        // Draw our display buffer
+        int16_t size = displayBuffer.size();
+        for (int y = 0; y < size; y++) 
+        {
+            u8g2.drawStr(0, 13 + (y*6), displayBuffer[y].c_str());
+        }
+        u8g2.sendBuffer();
     }
-
-    // Draw battery % based on mv
-    std::string battString = std::to_string(battLevel) + "%";
-    u8g2.drawStr(110, 5,  battString.c_str());
-
-    u8g2.drawLine(0, 6, 128, 6);
-
-    // Draw our display buffer
-    int size = displayBuffer.size();
-    for (int y = 0; y < size; y++) 
-    {
-        u8g2.drawStr(0, 13 + (y*6), displayBuffer[y].c_str());
-    }
-    u8g2.sendBuffer();
 }
 
 /**
@@ -108,43 +113,189 @@ void refreshDisplay(void)
  */
 void sendToDisplay(std::string s)
 {
-    // Get display buffer size
-    int size = displayBuffer.size();
-    // MAX 9 lines Y
-    if(size < 9)
+    if(!s.empty())
     {
-        // MAX 32 characters X
-        if(s.length() < 32)
+        // Get display buffer size
+        int16_t size = displayBuffer.size();
+
+        // MAX 9 lines Y
+        if(size < 9)
         {
-            // Push the newest data to the back of array
-            displayBuffer.push_back(s);
+            // MAX 32 characters X
+            if(s.length() <= 32)
+            {
+                // Push the newest data to the back of array
+                displayBuffer.push_back(s);
+            } else {
+                // If text too long, resize then push to back
+                s.resize(30);
+                displayBuffer.push_back(s + "..");
+            }
         } else {
-            // If text too long, resize then push to back
-            s.resize(30);
-            displayBuffer.push_back(s + "..");
+            // Erase oldest data and push newest to the back of array
+            displayBuffer.erase(displayBuffer.begin());
+            // MAX 32 characters X
+            if(s.length() <= 32)
+            {
+                // Push the newest data to the back of array
+                displayBuffer.push_back(s);
+            } else {
+                // If text too long, resize then push to back
+                s.resize(30);
+                displayBuffer.push_back(s + "..");
+            }
         }
-    } else {
-        // Erase oldest data and push newest to the back of array
-        // Shouldn't I resize X here too? 
-        displayBuffer.erase(displayBuffer.begin());
-        displayBuffer.push_back(s);
+        refreshDisplay();
     }
-    refreshDisplay();
+}
+
+/**
+ * @brief RX Counter
+ * Max 999 because of screen limits
+ * TODO: Track how many resets (1000 beacons sent)
+ * 
+ */
+void rxCounter()
+{
+    if(rxCount < 999)
+    {
+        rxCount++;
+        refreshDisplay();
+    } else {
+        rxCount = 0;
+        txCount = 0;
+        sendToDisplay("Resetting RX/TX Beacon Count!");
+    }
+}
+
+/**
+ * @brief TX Counter
+ * Max 999 because of screen limits
+ * 
+ */
+void txCounter()
+{
+    if(txCount < 999)
+    {
+        txCount++;
+        refreshDisplay();
+    } else {
+        rxCount = 0;
+        txCount = 0;
+        sendToDisplay("Resetting RX/TX Beacon Count!");
+    }
+}
+
+void parseJSON(std::string input)
+{
+    // DEBUG
+    if(input.empty())
+    {
+        input = "{\"name\":\"glamorous-hazel-mule (+1)\",\"rssi\":-93,\"snr\":12.2,\"lat\":47.5179,\"long\":-52.8124}";
+    }
+
+    // Total (minimum) 152
+    // Total (recommended) 192
+    // Using 256 to leave room as 'input' is not static
+    DynamicJsonDocument jsonObj(256);
+    DeserializationError error = deserializeJson(jsonObj, input);
+
+    if(!error)
+    {
+        const char* hsName = jsonObj["name"];
+        int16_t hsRssi = jsonObj["rssi"].as<int16_t>();
+        float hsSnr =  jsonObj["snr"].as<float>();
+        double hsLat = jsonObj["lat"].as<double>();
+        double hsLong = jsonObj["long"].as<double>();
+        if(hsName != nullptr)
+        {
+            rxCounter();
+            
+            std::ostringstream namess;
+            namess << hsName;
+            std::string hsNameS = namess.str();
+
+            std::ostringstream snrss;
+            snrss << std::fixed << std::setprecision(1) << hsSnr;
+
+            std::string rxrssi = std::to_string(g_last_rssi);
+            std::string rxsnr = std::to_string(g_last_snr);
+
+            double distM = 0.0;
+            double distKM = 0.0;
+            std::string distS = "";
+            // THIS CHECK IS FOR DEBUGGING ONLY
+            if (my_rak1910_gnss.location.isValid())
+		    {
+                distM = my_rak1910_gnss.distanceBetween(ftester_lat, ftester_long, hsLat, hsLong);
+                distKM = distM / 1000.0;
+                if(distKM <= 0.1)
+                {
+                    distS = "<0.1";
+                } else {
+                    std::ostringstream dss;
+                    dss << std::fixed << std::setprecision(1) << distKM;
+                    distS = dss.str();
+                }
+            } else {
+                // DEBUG
+                ftester_lat = 47.51563224351281;
+                ftester_long = -52.81891231773771;
+                distM = my_rak1910_gnss.distanceBetween(ftester_lat, ftester_long, hsLat, hsLong);
+                distKM = distM / 1000.0;
+                if(distKM <= 0.1)
+                {
+                    distS = "<0.1";
+                } else {
+                    std::ostringstream dssd;
+                    dssd << std::fixed << std::setprecision(1) << distKM;
+                    distS = dssd.str();
+                }
+            } 
+
+            // Distance and HS count is critical info, so we deal with it differently
+            // This needs to mimic displayName
+            std::string lenCheck = std::to_string(rxCount) + "." + hsNameS + " " + distS + "km";            
+            int16_t nameLen = lenCheck.length();
+
+            // Nibble away at hot spot name to save
+            // important info (i.e. HS count/distance)
+            // Most dynamic way I can think to do this
+            if(nameLen > 32)
+            {
+                std::string delimiter = "-";
+                // Find first '-'
+                int16_t pos = hsNameS.find(delimiter);
+                // Chunk size to fit on screen
+                int16_t chunk = nameLen - 32;
+                // Erase chunk, but keep first '-'
+                hsNameS.erase(pos+1, chunk);
+            }
+
+            std::string displayName = std::to_string(rxCount) + "." + hsNameS + " " + distS + "km";
+            std::string signalInfo = "RSSI:" + rxrssi + "/" + std::to_string(hsRssi) + " SNR:" + rxsnr + "/" + snrss.str();
+
+            sendToDisplay(displayName);
+            sendToDisplay(signalInfo);
+        }
+    }
 }
 
 /**
  * @brief Put display into Power Saver mode
- * Mostly to save burn in
+ * Mostly to save burn in. leave screen on if
+ * data is being processed
  * 
  * @param unused 
  * 
  */
 void ftester_display_sleep(TimerHandle_t unused)
 {
-    u8g2.setPowerSave(true);
-    displayTimeoutTimer.stop();
-    battTimer.stop();
-    displayOn = false;
+    if(!ftester_busy)
+    {
+        displayOn = false;
+        u8g2.setPowerSave(true);
+    }
 }
 
 /**
@@ -154,10 +305,7 @@ void ftester_display_sleep(TimerHandle_t unused)
  */
 float ftester_getBattLevel()
 {
-    if(displayOn)
-    {
-        return mv_to_percent(read_batt());
-    }
+    return mv_to_percent(read_batt());
 }
 
 /**
@@ -167,56 +315,9 @@ float ftester_getBattLevel()
  */
 void ftester_updateBattLevel(TimerHandle_t unused)
 {
-    if(displayOn)
+    if(!ftester_busy)
     {
-        // Batt level bouncies around a lot
-        // Smooth this out
         battLevel = ftester_getBattLevel();
-        refreshDisplay();
-    }
-}
-
-/**
- * @brief Initialize Display here
- * 
- */
-void display_init(void)
-{
-    u8g2.begin();
-    // Creater timer for display and start it (30 seconds)
-    displayTimeoutTimer.begin(30000, ftester_display_sleep);
-    displayTimeoutTimer.start();
-    battTimer.begin(19500, ftester_updateBattLevel, NULL, true);
-    battTimer.start();
-    sendToDisplay("Trying to join Helium Netowrk.");
-}
-
-/**
- * @brief Field Tester GPS event handler
- * 
- * This needs to be completely reworked again
- * Info for sat's found is very slow and behind, but does work
- * 
- */
-void ftester_gps_event(void)
-{
-    ftester_satCount = my_rak1910_gnss.satellites.value();
-
-    if(ftester_gps_fix) 
-    {
-        if(once) 
-        {
-            sendToDisplay("GPS satellites found!");
-            once = false;
-        }
-    } else {
-        if(!once)
-        {
-            sendToDisplay("Lost GPS fix.");
-        } else {
-            sendToDisplay("Searching for GPS satellites.");
-        }
-        once = true;
     }
 }
 
@@ -232,16 +333,17 @@ void ftester_event_handler(void)
         if(g_join_result)
         {
             sendToDisplay("Joined Helium Network!");
-            // DEBUG TO MAKE SURE SCREEN TURNS ON
-            if(displayOn)
-            {
-                displayTimeoutTimer.reset();
-            } else {
-                u8g2.setPowerSave(false);
-                displayOn = true;
-                displayTimeoutTimer.reset();
-                battTimer.reset();
-            }
+            // Simulating RX
+            // for(int x=0; x < 10; x++)
+            // {
+            //     parseJSON("");
+            // }
+            // Don't turn off screen until joined Helium
+            // Bad for screen but usable for now
+            displayTimeoutTimer.begin(305137, ftester_display_sleep);
+            displayTimeoutTimer.start();
+            battTimer.begin(65317, ftester_updateBattLevel, NULL, true);
+            battTimer.start();
         }
     }
 }
@@ -256,6 +358,7 @@ void ftester_event_handler(void)
  */
 void ftester_lora_data_handler(void)
 {
+    ftester_busy = true;
     // Convert RX data buffer to char
     char log_buff[g_rx_data_len * 3] = {0};
     uint8_t log_idx = 0;
@@ -272,104 +375,15 @@ void ftester_lora_data_handler(void)
     hexString.erase(end_pos, hexString.end());
 
     // Convert from HEX to "text" to build JSON string
-    size_t len = hexString.length();
+    int16_t len = hexString.length();
     for(int i = 0; i < len; i+=2)
     {
         std::string byte = hexString.substr(i,2);
         char chr = (char) (int)strtol(byte.c_str(), nullptr, 16);
         jsonString.push_back(chr);
     }
-
-    DynamicJsonDocument jsonObj(256);
-    DeserializationError error = deserializeJson(jsonObj, jsonString);
-
-    if(error)
-    {
-        MYLOG("R4K", "Deserialize error, bad data?");
-    } else {
-        // If there's no name, the packet got damaged
-        std::string hsNameUP = jsonObj["name"];
-        if(!hsNameUP.empty())
-        {
-            // RX Counter
-            if(rxCount < 999)
-            {
-                rxCount++;
-                refreshDisplay();
-            } else {
-                rxCount = 0;
-                txCount = 0;
-                sendToDisplay("Resetting RX/TX Beacon Count!");
-            }
-
-            // Get our TX signal quality
-            std::string txrssi = jsonObj["rssi"];
-            std::string txsnr = jsonObj["snr"];
-
-            // Get hot spot lat/long
-            std::string hsLat = jsonObj["lat"];
-            std::string hsLong = jsonObj["long"];
-            double hsLatD = std::stod(hsLat);
-            double hsLongD = std::stod(hsLong);
-            double distM = my_rak1910_gnss.distanceBetween(ftester_lat, ftester_long, hsLatD, hsLongD);
-            // Round and set precision to display 1 decimal place only
-            double distKM = round((distM / 1000.0) * 10.0) / 10.0;
-            std::ostringstream ossDist;
-            ossDist << std::setprecision(2) << std::noshowpoint << distKM;
-            std::string distKMS = "";
-            if(distKM <= 0)
-            {
-                distKMS = "<0.1km";
-            } else {
-                distKMS = " " + ossDist.str() + "km";
-            }
-
-            // Clean up hot spot name for human readable
-            hsNameUP.erase(
-                remove( hsNameUP.begin(), hsNameUP.end(), '\"' ),
-                hsNameUP.end()
-            );
-
-            // Get our RX signal quality
-            // Round and set precision to display 1 decimal place only
-            std::ostringstream ossSnr;
-            double rxsnrd = round(g_last_snr * 10.0) / 10.0;
-            ossSnr << std::setprecision(2) << std::noshowpoint << rxsnrd;
-            std::string rxsnr = ossSnr.str();
-            std::string rxrssi = std::to_string(g_last_rssi);
-
-            // Build signal info/string for display
-            std::string txsnrc = txsnr.c_str();
-            std::string rxsnrc = rxsnr.c_str();
-            std::string combined = (std::string("RSSI:") + rxrssi + "/" + txrssi) + (" SNR: " + rxsnrc + "/" + txsnrc);
-
-            // Send everything to the display
-            sendToDisplay(std::to_string(rxCount) + "." + hsNameUP  + distKMS);
-            sendToDisplay(combined);
-        } else {
-            // Bad/Damaged packet. Dropping info, network issues
-            MYLOG("R4K", "Damaged/Bad JSON Data");
-        }
-    }
-}
-
-/**
- * @brief Mapper is sending beacon(packet)
- * Keep count of how many beacons sent
- * Max of 999 because of screen limitations
- * 
- */
-void ftester_tx_beacon(void)
-{
-    if(txCount < 999)
-    {
-        txCount++;
-        refreshDisplay();
-    } else {
-        rxCount = 0;
-        txCount = 0;
-        sendToDisplay("Resetting RX/TX Beacon Count!");
-    }
+    parseJSON(jsonString);
+    ftester_busy = false;
 }
 
 /**
@@ -386,10 +400,20 @@ void ftester_acc_event(void)
     } else {
         // Screen is off, wake up
         u8g2.setPowerSave(false);
-        displayOn = true;
         displayTimeoutTimer.reset();
-        battTimer.reset();
+        displayOn = true;
     }
+}
+
+/**
+ * @brief Mapper is sending beacon(packet)
+ * Keep count of how many beacons sent
+ * Max of 999 because of screen limitations
+ * 
+ */
+void ftester_tx_beacon(void)
+{
+    txCounter();
 }
 
 /**
@@ -402,4 +426,47 @@ void ftester_setGPSData(int64_t lat, int64_t lon)
 {
     ftester_lat = lat / 100000.0;
     ftester_long = lon / 100000.0;
+}
+
+/**
+ * @brief Set the GPS fix status of the tester
+ * 
+ * @param fix mapper passed info
+ */
+void ftester_gps_fix(bool fix)
+{
+    ftester_satCount = my_rak1910_gnss.satellites.value();
+
+    if(fix)
+    {
+        if(!ftester_gpsLock)
+        {
+            sendToDisplay("GPS satellites found!");
+            ftester_gpsLock = true;
+        }
+    } else {
+        if(ftester_gpsLock)
+        {
+            sendToDisplay("Lost GPS fix.");
+        } else {
+            sendToDisplay("Searching for GPS satellites.");
+        }
+        ftester_gpsLock = false;
+    }
+}
+
+/**
+ * @brief Initialize Display here
+ * 
+ */
+void ftester_init(void)
+{
+    u8g2.begin();
+    u8g2.setFont(u8g2_font_micro_mr);
+    u8g2.drawXBM(0, 0, rak_width, rak_height, rak_bits);
+    u8g2.drawStr(74, 10, "R4K v0.3a");
+    u8g2.drawStr(74, 16, "Field Tester");
+    u8g2.drawStr(74, 28, "Alpha Build");
+    u8g2.drawStr(38, 64, "Joining Helium Network!");
+    u8g2.sendBuffer();
 }

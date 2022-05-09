@@ -38,6 +38,8 @@ time_t min_delay = 45000;
 /** The GPS module to use */
 uint8_t gnss_option;
 
+
+
 // Forward declaration
 void send_delayed(TimerHandle_t unused);
 
@@ -59,7 +61,8 @@ void setup_app(void)
 	api_set_version(1, 0, 2);
 	// Initalize Display here, went want info now!
 	// TODO: Can I init even sooner than this?
-	display_init();
+	ftester_init();
+
 }
 
 /**
@@ -165,7 +168,7 @@ void app_event_handler(void)
 				MYLOG("APP", "Valid GNSS position acquired");
 
 				//Hook for Field Tester
-				ftester_gps_fix = true;
+				ftester_gps_fix(true);
 
 				if (g_ble_uart_is_connected)
 				{
@@ -242,7 +245,7 @@ void app_event_handler(void)
 				MYLOG("APP", "No valid GNSS position");
 
 				//Hook for Field Tester
-				ftester_gps_fix = false;
+				ftester_gps_fix(false);
 
 				if (g_ble_uart_is_connected)
 				{
@@ -254,8 +257,6 @@ void app_event_handler(void)
 			last_pos_send = millis();
 			// Just in case
 			delayed_active = false;
-
-
 		}
 	}
 

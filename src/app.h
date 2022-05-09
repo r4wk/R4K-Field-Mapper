@@ -19,6 +19,18 @@
 /** Include the WisBlock-API */
 #include <WisBlock-API.h> // Click to install library: http://librarymanager/All#WisBlock-API
 
+// Field Tester Includes
+#include <SPI.h>
+#include <U8g2lib.h>
+#include <string>
+#include <ArduinoJson.h>
+#include <vector>
+#include <iostream>
+#include <sstream>
+#include <iomanip>
+#include <algorithm>
+#include <rak_image.h>
+
 // Debug output set to 0 to disable app debug output
 #ifndef MY_DEBUG
 #define MY_DEBUG 1
@@ -46,11 +58,10 @@ void lora_data_handler(void);
 void lora_tx_finished(bool success);
 void lora_rx_failed(void);
 // Field Mapper
-void display_init(void);
+void ftester_init(void);
 void ftester_event_handler(void);
 void ftester_lora_data_handler(void);
-inline bool ftester_gps_fix = false;
-void ftester_gps_event(void);
+void ftester_gps_fix(bool fix);
 void ftester_tx_beacon(void);
 void ftester_acc_event(void);
 void ftester_setGPSData(int64_t lat, int64_t lon);
