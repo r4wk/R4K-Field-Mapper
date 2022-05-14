@@ -191,12 +191,6 @@ void txCounter()
 
 void parseJSON(std::string input)
 {
-    // DEBUG
-    if(input.empty())
-    {
-        input = "{\"name\":\"glamorous-hazel-mule (+1)\",\"rssi\":-93,\"snr\":12.2,\"lat\":47.5179,\"long\":-52.8124}";
-    }
-
     // Total (minimum) 152
     // Total (recommended) 192
     // Using 256 to leave room as 'input' is not static
@@ -227,34 +221,17 @@ void parseJSON(std::string input)
             double distM = 0.0;
             double distKM = 0.0;
             std::string distS = "";
-            // THIS CHECK IS FOR DEBUGGING ONLY
-            if (my_rak1910_gnss.location.isValid())
-		    {
-                distM = my_rak1910_gnss.distanceBetween(ftester_lat, ftester_long, hsLat, hsLong);
-                distKM = distM / 1000.0;
-                if(distKM <= 0.1)
-                {
-                    distS = "<0.1";
-                } else {
-                    std::ostringstream dss;
-                    dss << std::fixed << std::setprecision(1) << distKM;
-                    distS = dss.str();
-                }
+
+            distM = my_rak1910_gnss.distanceBetween(ftester_lat, ftester_long, hsLat, hsLong);
+            distKM = distM / 1000.0;
+            if(distKM <= 0.1)
+            {
+                distS = "<0.1";
             } else {
-                // DEBUG
-                ftester_lat = 47.51563224351281;
-                ftester_long = -52.81891231773771;
-                distM = my_rak1910_gnss.distanceBetween(ftester_lat, ftester_long, hsLat, hsLong);
-                distKM = distM / 1000.0;
-                if(distKM <= 0.1)
-                {
-                    distS = "<0.1";
-                } else {
-                    std::ostringstream dssd;
-                    dssd << std::fixed << std::setprecision(1) << distKM;
-                    distS = dssd.str();
-                }
-            } 
+                std::ostringstream dss;
+                dss << std::fixed << std::setprecision(1) << distKM;
+                distS = dss.str();
+            }
 
             // Distance and HS count is critical info, so we deal with it differently
             // This needs to mimic displayName
@@ -339,11 +316,6 @@ void ftester_event_handler(void)
         if(g_join_result)
         {
             sendToDisplay("Joined Helium Network!");
-            // Simulating RX
-            // for(int x=0; x < 10; x++)
-            // {
-            //     parseJSON("");
-            // }
             // Don't turn off screen until joined Helium
             // Bad for screen but usable for now
             displayTimeoutTimer.begin(305137, ftester_display_sleep);
