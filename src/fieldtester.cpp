@@ -2,7 +2,7 @@
  * @file fieldtester.cpp
  * @author r4wk (r4wknet@gmail.com)
  * @brief RAK FieldTester/Mapper
- * @version 0.2a
+ * @version 0.3a
  * @date 2022-02-15
  * 
  * @copyright Copyright (c) 2022
@@ -11,6 +11,7 @@
  *       Add more to MYLOG()
  *       Add RAK12500_GNSS compatibility
  *       Kill some logic when display is off
+ *       Real versioning
  * 
  */
 
@@ -55,6 +56,7 @@ U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R2);
  */
 void refreshDisplay(void)
 {
+    ftester_busy = true;
     if(displayOn)
     {
         // Clear screen
@@ -81,10 +83,10 @@ void refreshDisplay(void)
         if(battLevel >= 55)
         {
             u8g2.drawGlyph(115, 6, 0xe086);
-        } else if(battLevel < 55 && battLevel >= 25)
+        } else if(battLevel < 55 && battLevel >= 15)
         {
             u8g2.drawGlyph(115, 6, 0xe085);
-        } else if(battLevel < 25)
+        } else if(battLevel < 15)
         {
             u8g2.drawGlyph(115, 6, 0xe084);
         }
@@ -100,6 +102,7 @@ void refreshDisplay(void)
         }
         u8g2.sendBuffer();
     }
+    ftester_busy = false;
 }
 
 /**
@@ -294,6 +297,7 @@ void ftester_display_sleep(TimerHandle_t unused)
     if(!ftester_busy)
     {
         displayOn = false;
+        displayTimeoutTimer.stop();
         u8g2.setPowerSave(true);
     }
 }
@@ -310,6 +314,8 @@ float ftester_getBattLevel()
 
 /**
  * @brief Used to update battery level in a timer
+ * Don't update batt level is device is busy, will give
+ * false info
  * 
  * @param unused 
  */
