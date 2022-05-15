@@ -199,6 +199,8 @@ void parseJSON(std::string input)
 
     if(!error)
     {
+        // Build vars from JSON data
+        // Using .as<> for safety
         const char* hsName = jsonObj["name"];
         int16_t hsRssi = jsonObj["rssi"].as<int16_t>();
         float hsSnr =  jsonObj["snr"].as<float>();
@@ -206,15 +208,20 @@ void parseJSON(std::string input)
         double hsLong = jsonObj["long"].as<double>();
         if(hsName != nullptr)
         {
+            // Increase RX counter
             rxCounter();
             
+            // Start building hot spot name
             std::ostringstream namess;
             namess << hsName;
             std::string hsNameS = namess.str();
 
+            // Build hot spot snr and set precision to 1
+            // i.e. 0.1
             std::ostringstream snrss;
             snrss << std::fixed << std::setprecision(1) << hsSnr;
 
+            // Get the SNR/RSSI from field tester
             std::string rxrssi = std::to_string(g_last_rssi);
             std::string rxsnr = std::to_string(g_last_snr);
 
@@ -222,12 +229,16 @@ void parseJSON(std::string input)
             double distKM = 0.0;
             std::string distS = "";
 
+            // Get distance between tester and hot spot
             distM = my_rak1910_gnss.distanceBetween(ftester_lat, ftester_long, hsLat, hsLong);
             distKM = distM / 1000.0;
+            // If distance is less than 0.1km we just display
+            // it as <0.1
             if(distKM <= 0.1)
             {
                 distS = "<0.1";
             } else {
+                // Set precision to 1 for distance
                 std::ostringstream dss;
                 dss << std::fixed << std::setprecision(1) << distKM;
                 distS = dss.str();
@@ -252,6 +263,7 @@ void parseJSON(std::string input)
                 hsNameS.erase(pos+1, chunk);
             }
 
+            // Final strings for display, ready to send to OLED
             std::string displayName = std::to_string(rxCount) + "." + hsNameS + " " + distS + "km";
             std::string signalInfo = "RSSI:" + rxrssi + "/" + std::to_string(hsRssi) + " SNR:" + rxsnr + "/" + snrss.str();
 
