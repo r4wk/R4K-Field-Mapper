@@ -44,7 +44,6 @@ U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R2);
 
 /**
  * @brief Redraw info bar and display buffer with up to date info
- * TODO: Space out icons better
  * 
  * Firmware version
  * GPS fix status
@@ -83,10 +82,10 @@ void refreshDisplay(void)
         if(battLevel >= 55)
         {
             u8g2.drawGlyph(115, 6, 0xe086);
-        } else if(battLevel < 55 && battLevel >= 15)
+        } else if(battLevel >= 15)
         {
             u8g2.drawGlyph(115, 6, 0xe085);
-        } else if(battLevel < 15)
+        } else
         {
             u8g2.drawGlyph(115, 6, 0xe084);
         }
@@ -283,6 +282,7 @@ void parseJSON(std::string input)
  */
 void ftester_display_sleep(TimerHandle_t unused)
 {
+    // This should never happen right?
     if(!ftester_busy)
     {
         displayOn = false;
@@ -425,6 +425,7 @@ void ftester_setGPSData(int64_t lat, int64_t lon)
  */
 void ftester_gps_fix(bool fix)
 {
+    ftester_busy = true;
     ftester_satCount = my_rak1910_gnss.satellites.value();
 
     if(fix)
@@ -443,6 +444,7 @@ void ftester_gps_fix(bool fix)
         }
         ftester_gpsLock = false;
     }
+    ftester_busy = false;
 }
 
 /**
