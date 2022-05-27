@@ -70,12 +70,9 @@ void refreshDisplay(void)
 
         // Draw Helium Join Status
         // RX/TX Count
-        if(g_join_result) 
-        {
-            u8g2.drawStr(68, 5, "(H)");
-            std::string count = std::to_string(rxCount) + "/" + std::to_string(txCount);
-            u8g2.drawStr(80, 5,  count.c_str());
-        }
+        u8g2.drawStr(68, 5, "(H)");
+        std::string count = std::to_string(rxCount) + "/" + std::to_string(txCount);
+        u8g2.drawStr(80, 5,  count.c_str());
 
         // Draw battery level based on mv
         u8g2.setFont(u8g2_font_siji_t_6x10);
@@ -282,12 +279,14 @@ void parseJSON(std::string input)
  */
 void ftester_display_sleep(TimerHandle_t unused)
 {
-    // This should never happen right?
     if(!ftester_busy)
     {
         displayOn = false;
         displayTimeoutTimer.stop();
         u8g2.setPowerSave(true);
+    } else {
+        // This should never happen right?
+        displayTimeoutTimer.reset();
     }
 }
 
