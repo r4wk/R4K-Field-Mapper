@@ -7,10 +7,8 @@
  * 
  * @copyright Copyright (c) 2022
  * TODO: Detect display so can still work without working/connected display
- *       Use proper icons?
  *       Add more to MYLOG()
  *       Add RAK12500_GNSS compatibility
- *       Kill some logic when display is off
  *       Real versioning
  * 
  */
@@ -283,6 +281,7 @@ void ftester_display_sleep(TimerHandle_t unused)
     {
         displayOn = false;
         displayTimeoutTimer.stop();
+        battTimer.stop();
         u8g2.setPowerSave(true);
     } else {
         // This should never happen right?
@@ -390,14 +389,14 @@ void ftester_acc_event(void)
         // Screen is off, wake up
         u8g2.setPowerSave(false);
         displayTimeoutTimer.reset();
+        battTimer.reset();
         displayOn = true;
+        ftester_updateBattLevel(nullptr);
     }
 }
 
 /**
  * @brief Mapper is sending beacon(packet)
- * Keep count of how many beacons sent
- * Max of 999 because of screen limitations
  * 
  */
 void ftester_tx_beacon(void)
