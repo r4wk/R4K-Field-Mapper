@@ -83,6 +83,8 @@ uint8_t init_gnss(void)
  */
 bool poll_gnss(uint8_t gnss_option)
 {
+	// Hook for Field Tester
+	ftester_GPSBusy(true);
 	time_t time_out = millis();
 	bool has_pos = false;
 	int64_t latitude = 0;
@@ -231,5 +233,7 @@ bool poll_gnss(uint8_t gnss_option)
 
 	last_read_ok = false;
 	// my_rak1910_gnss.setMeasurementRate(1000);
+	// Hook for Field Tester
+	ftester_GPSBusy(false);
 	return false;
 }

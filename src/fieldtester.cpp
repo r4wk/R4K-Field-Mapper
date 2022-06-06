@@ -423,7 +423,6 @@ void ftester_setGPSData(int64_t lat, int64_t lon)
  */
 void ftester_gps_fix(bool fix)
 {
-    ftester_busy = true;
     ftester_satCount = my_rak1910_gnss.satellites.value();
 
     if(fix)
@@ -442,7 +441,17 @@ void ftester_gps_fix(bool fix)
         }
         ftester_gpsLock = false;
     }
-    ftester_busy = false;
+}
+
+/**
+ * @brief Allows me to know if GPS
+ * Module is busy, thus making ftester busy
+ * 
+ * @param busy 
+ */
+void ftester_GPSBusy(bool busy)
+{
+    ftester_busy = busy;
 }
 
 /**
