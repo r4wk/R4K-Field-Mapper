@@ -1,4 +1,4 @@
-R4K Field Tester - Create Helium Field Tester out of RAK WisBlock modules.🗺️
+R4K Field Mapper - Create Helium Field Tester out of RAK WisBlock modules.🗺️
 
 - Runs as a mapper and field tester.
 - Screen time out is 5 minutes. Accelerometer will trigger a screen wake.
