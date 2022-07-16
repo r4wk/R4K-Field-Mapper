@@ -14,6 +14,7 @@ What's needed
 - RAK4631
 - RAK1904
 - RAK1910
+- SSD1306 OLED
 
 Create an HTTP integration in the Helium Console and point it to the following endpoint 
 http://r4wk.net/lora/ingest.php
