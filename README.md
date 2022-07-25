@@ -15,7 +15,7 @@ What's needed
 - RAK1904
 - RAK1910
 - SSD1306 OLED
-- mxuteuk 50pcs Black Self-Lock Push Button Switch DC 30V 1A (OPTIONAL)
+- mxuteuk Black Self-Lock Push Button Switch DC 30V 1A (OPTIONAL)
   - https://www.amazon.ca/gp/product/B086L2GPGX/ref=ppx_od_dt_b_asin_title_s00
 
 Create an HTTP integration in the Helium Console and point it to the following endpoint 
