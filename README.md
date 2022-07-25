@@ -1,4 +1,4 @@
-## R4K Field Mapper - Create Helium Field Tester out of RAK WisBlock modules.🗺️
+## R4K Field Mapper - Create Helium Field Mapper out of RAK WisBlock modules.🗺️
 
 ## About
 - Runs as a mapper and field tester.
