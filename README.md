@@ -20,7 +20,7 @@
   
 ## Setting up your device
 
-As this project is a custom version of the RAK mapper firmware you flash it in the same way. If you're not sure on how that's done click the following link
+As this project is a custom version of the RAK mapper firmware you flash it in the same way. If you're not sure on how that's done click the following link:
 
 https://github.com/rakstars/WisBlock-RAK4631-Helium-Mapper/wiki/Make-a-Helium-Mapper-with-the-WisBlock
 
