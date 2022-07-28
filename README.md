@@ -26,7 +26,7 @@ As this project is a custom version of the RAK mapper firmware you flash it in t
 
 https://github.com/rakstars/WisBlock-RAK4631-Helium-Mapper/wiki/Make-a-Helium-Mapper-with-the-WisBlock
 
-Once you have the firmware flashed to the WisBlock and have an OLED soldered onto the device, all that is left is the intergration. 
+Once you have the R4K field mapper firmware flashed to the WisBlock and have an OLED soldered onto the device, all that is left is the intergration. 
 
 - To create an HTTP integration in a Helium Console:
   Click on Integrations, select Add New Integration, select HTTP. Then, copy and paste the following Endpoint URL:
