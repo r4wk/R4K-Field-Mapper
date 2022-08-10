@@ -46,6 +46,6 @@ Once you have the R4K field mapper firmware flashed to the WisBlock/RAK Mapper a
 - I advise enabling muilti-buy/packet so that you can uplink to multiple hot spots. But with how downlinks work the RX wait time on the router isn't long enough to catch as many hot spots as I wish. Fortunately I've requested this to be adjustable so hopefully we will see that feature soon. 
 https://github.com/helium/router/issues/781
 
-![r4k_1](https://user-images.githubusercontent.com/5049300/184006378-678fe88c-f595-4021-a030-5bde9451bb98.png)
+![r4k_1](https://user-images.githubusercontent.com/5049300/184007910-419ad6a0-6b1e-4d84-a6f2-9b4e66c802da.png)
 ![r4k_2](https://user-images.githubusercontent.com/5049300/184006683-ccbdd8d7-2d93-4afa-a609-32267d0bd55e.png)
 
