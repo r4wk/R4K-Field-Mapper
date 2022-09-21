@@ -19,6 +19,9 @@
 - SSD1306 OLED
 - mxuteuk Black Self-Lock Push Button Switch DC 30V 1A (OPTIONAL)
   - https://www.amazon.ca/gp/product/B086L2GPGX/ref=ppx_od_dt_b_asin_title_s00
+ - 550mAh 3.7v Battery
+ - DIYmalls 915MHz LoRa Antenna U.FL IPEX to SMA Connector Pigtail (OPTIONAL)
+   - https://www.amazon.ca/gp/product/B086ZG5WBR/ref=ppx_yo_dt_b_asin_title_o02_s00?ie=UTF8&psc=1
   
 ## Setting up your device
 
