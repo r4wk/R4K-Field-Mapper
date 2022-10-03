@@ -22,6 +22,8 @@ int32_t txCount = 0;
 int32_t rxCount = 0;
 // Battery level
 int8_t battLevel = 0;
+// Version
+std::string ver = "";
 // Is display is on/off
 bool displayOn = true;
 // Timer to put display to sleep, mostly to save burn in
@@ -60,9 +62,8 @@ void refreshDisplay(void)
     {
         // Clear screen
         u8g2.clearBuffer();
-
-        // Draw firmware version
-        u8g2.drawStr(0, 5, "R4K v0.3a");
+        
+        u8g2.drawStr(0, 5, ver.c_str());
 
         // Draw GPS sat fix count
         u8g2.drawStr(38, 5, "(GPS)");
@@ -486,10 +487,11 @@ void ftester_GPSBusy(bool busy)
  */
 void ftester_init(void)
 {
+    ver = "R4K v" + std::to_string(SW_VERSION_1) + "." + std::to_string(SW_VERSION_2) + "a";
     u8g2.begin();
     u8g2.setFont(u8g2_font_micro_mr);
     u8g2.drawXBM(0, 0, rak_width, rak_height, rak_bits);
-    u8g2.drawStr(74, 10, "R4K v0.4a");
+    u8g2.drawStr(74, 10, ver.c_str());
     u8g2.drawStr(74, 16, "Field Tester");
     u8g2.drawStr(74, 28, "Alpha Build");
     u8g2.drawStr(38, 64, "Joining Helium Network!");
