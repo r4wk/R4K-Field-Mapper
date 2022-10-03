@@ -63,6 +63,7 @@ void refreshDisplay(void)
         // Clear screen
         u8g2.clearBuffer();
         
+        // Draw firmware version
         u8g2.drawStr(0, 5, ver.c_str());
 
         // Draw GPS sat fix count
