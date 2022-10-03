@@ -15,7 +15,7 @@
 - RAK5005-O
 - RAK4631
 - RAK1904
-- RAK1910
+- RAK1910/RAK12500
 - SSD1306 OLED
 - 550mAh 3.7v Battery (can use any size if not using my case)
 - mxuteuk Black Self-Lock Push Button Switch DC 30V 1A (OPTIONAL)
