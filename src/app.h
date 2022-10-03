@@ -66,6 +66,7 @@ void ftester_tx_beacon(void);
 void ftester_acc_event(void);
 void ftester_setGPSData(int64_t lat, int64_t lon);
 void ftester_GPSBusy(bool busy);
+void ftester_SetGPSType(bool type);
 
 /** Examples for application events */
 #define ACC_TRIGGER 0b1000000000000000
@@ -86,6 +87,7 @@ uint8_t init_gnss(void);
 bool poll_gnss(uint8_t gnss_option);
 // Field Mapper
 extern TinyGPSPlus my_rak1910_gnss;
+extern SFE_UBLOX_GNSS my_rak12500_gnss;
 
 /** Accelerometer stuff */
 #include <SparkFunLIS3DH.h>

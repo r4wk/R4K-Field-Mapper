@@ -58,8 +58,12 @@ uint8_t init_gnss(void)
 	if (rak12500_present)
 	{
 		my_rak12500_gnss.setI2COutput(COM_TYPE_UBX);				 // Set the I2C port to output UBX only (turn off NMEA noise)
+		// Field Tester
+		my_rak12500_gnss.setHighPrecisionMode(false);
 		my_rak12500_gnss.saveConfigSelective(VAL_CFG_SUBSEC_IOPORT); // Save (only) the communications port settings to flash and BBR
 		MYLOG("GNSS", "Detected and initialized RAK12500");
+		// Hook for Field Tester
+		ftester_SetGPSType(true);
 		return RAK12500_GNSS;
 	}
 	else
@@ -72,6 +76,8 @@ uint8_t init_gnss(void)
 		while (!Serial1)
 			;
 		MYLOG("GNSS", "Initialized RAK1910");
+		// Hook for Field Tester
+		ftester_SetGPSType(false);
 		return RAK1910_GNSS;
 	}
 }

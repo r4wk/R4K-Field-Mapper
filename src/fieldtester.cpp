@@ -36,6 +36,8 @@ int8_t ftester_satCount = 0;
 bool ftester_gpsLock = false;
 // Is field tester busy
 bool ftester_busy = false;
+// Is 12500 installed
+bool israk12500 = false;
 
 // Instance for display object (RENDER UPSIDE DOWN)
 U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R2);
@@ -423,13 +425,21 @@ void ftester_setGPSData(int64_t lat, int64_t lon)
  */
 void ftester_gps_fix(bool fix)
 {
-    ftester_satCount = my_rak1910_gnss.satellites.value();
+    if(israk12500)
+    {
+        ftester_satCount = my_rak12500_gnss.getSIV();
+    } else {
+        ftester_satCount = my_rak1910_gnss.satellites.value();
+    }
+
 
     if(fix)
     {
         if(!ftester_gpsLock)
         {
             sendToDisplay("GPS satellites found!");
+            // SAVE FIX INFO FOR NEXT BOOT RAK12500?
+			if(israk12500) { my_rak12500_gnss.saveConfigSelective(VAL_CFG_SUBSEC_NAVCONF); }
             ftester_gpsLock = true;
         }
     } else {
@@ -440,6 +450,22 @@ void ftester_gps_fix(bool fix)
             sendToDisplay("Searching for GPS satellites.");
         }
         ftester_gpsLock = false;
+    }
+}
+
+/**
+ * @brief Check what GNNS module to use
+ * 
+ * @param type 
+ */
+void ftester_SetGPSType(bool type)
+{
+    israk12500 = type;
+    if(type)
+    {
+        sendToDisplay("Initialized RAK12500");
+    } else {
+        sendToDisplay("Initialized RAK1910");
     }
 }
 
@@ -463,7 +489,7 @@ void ftester_init(void)
     u8g2.begin();
     u8g2.setFont(u8g2_font_micro_mr);
     u8g2.drawXBM(0, 0, rak_width, rak_height, rak_bits);
-    u8g2.drawStr(74, 10, "R4K v0.3a");
+    u8g2.drawStr(74, 10, "R4K v0.4a");
     u8g2.drawStr(74, 16, "Field Tester");
     u8g2.drawStr(74, 28, "Alpha Build");
     u8g2.drawStr(38, 64, "Joining Helium Network!");

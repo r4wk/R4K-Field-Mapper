@@ -14,7 +14,7 @@
 #include "app.h"
 
 /** Set the device name, max length is 10 characters */
-char g_ble_dev_name[10] = "WB-Mapper";
+char g_ble_dev_name[10] = "R4K-FM";
 
 /** Flag showing if TX cycle is ongoing */
 bool lora_busy = false;
