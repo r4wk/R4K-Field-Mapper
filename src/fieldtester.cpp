@@ -440,8 +440,6 @@ void ftester_gps_fix(bool fix)
         if(!ftester_gpsLock)
         {
             sendToDisplay("GPS satellites found!");
-            // SAVE FIX INFO FOR NEXT BOOT RAK12500?
-			if(israk12500) { my_rak12500_gnss.saveConfigSelective(VAL_CFG_SUBSEC_NAVCONF); }
             ftester_gpsLock = true;
         }
     } else {
