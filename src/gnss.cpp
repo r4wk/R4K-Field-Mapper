@@ -161,21 +161,35 @@ bool poll_gnss(uint8_t gnss_option)
 		break;
 
 	case RAK12500_GNSS:
-		// PR to base mapper (multi gnss try)
-		while ((millis() - time_out) < 10000)
+		MYLOG("GNSS", "Polling RAK12500");
+		if (g_ble_uart_is_connected)
 		{
-			MYLOG("GNSS", "Polling RAK12500");
-			if (g_ble_uart_is_connected)
+			g_ble_uart.print("Polling RAK12500\n");
+		}
+		// PR to base mapper (multi gnss try)
+		if (my_rak12500_gnss.getGnssFixOk())
+		{
+			latitude = my_rak12500_gnss.getLatitude() / 100;
+			longitude = my_rak12500_gnss.getLongitude() / 100;
+			altitude = my_rak12500_gnss.getAltitude() / 1000;
+			accuracy = my_rak12500_gnss.getHorizontalDOP();
+			has_pos = true;
+		} else {
+			while ((millis() - time_out) < 10000 && !my_rak12500_gnss.getGnssFixOk())
 			{
-				g_ble_uart.print("Polling RAK12500\n");
-			}
-			if (my_rak12500_gnss.getGnssFixOk())
-			{
-				latitude = my_rak12500_gnss.getLatitude() / 100;
-				longitude = my_rak12500_gnss.getLongitude() / 100;
-				altitude = my_rak12500_gnss.getAltitude() / 1000;
-				accuracy = my_rak12500_gnss.getHorizontalDOP();
-				has_pos = true;
+				MYLOG("GNSS", "Polling RAK12500");
+				if (g_ble_uart_is_connected)
+				{
+					g_ble_uart.print("Polling RAK12500\n");
+				}
+				if (my_rak12500_gnss.getGnssFixOk())
+				{
+					latitude = my_rak12500_gnss.getLatitude() / 100;
+					longitude = my_rak12500_gnss.getLongitude() / 100;
+					altitude = my_rak12500_gnss.getAltitude() / 1000;
+					accuracy = my_rak12500_gnss.getHorizontalDOP();
+					has_pos = true;
+				} 
 			}
 		}
 		break;
