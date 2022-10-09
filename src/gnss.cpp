@@ -57,13 +57,11 @@ uint8_t init_gnss(void)
 
 	if (rak12500_present)
 	{
-		my_rak12500_gnss.setI2COutput(COM_TYPE_UBX);				 // Set the I2C port to output UBX only (turn off NMEA noise)
-		// Field Tester
-		my_rak12500_gnss.setHighPrecisionMode(false);
-		my_rak12500_gnss.saveConfigSelective(VAL_CFG_SUBSEC_IOPORT); // Save (only) the communications port settings to flash and BBR
-		MYLOG("GNSS", "Detected and initialized RAK12500");
 		// Hook for Field Tester
 		ftester_SetGPSType(true);
+		my_rak12500_gnss.setI2COutput(COM_TYPE_UBX);				 // Set the I2C port to output UBX only (turn off NMEA noise)
+		my_rak12500_gnss.saveConfigSelective(VAL_CFG_SUBSEC_IOPORT); // Save (only) the communications port settings to flash and BBR
+		MYLOG("GNSS", "Detected and initialized RAK12500");
 		return RAK12500_GNSS;
 	}
 	else
@@ -163,19 +161,22 @@ bool poll_gnss(uint8_t gnss_option)
 		break;
 
 	case RAK12500_GNSS:
-		MYLOG("GNSS", "Polling RAK12500");
-		if (g_ble_uart_is_connected)
+		// PR to base mapper (multi gnss try)
+		while ((millis() - time_out) < 10000)
 		{
-			g_ble_uart.print("Polling RAK12500\n");
-		}
-
-		if (my_rak12500_gnss.getGnssFixOk())
-		{
-			latitude = my_rak12500_gnss.getLatitude() / 100;
-			longitude = my_rak12500_gnss.getLongitude() / 100;
-			altitude = my_rak12500_gnss.getAltitude() / 1000;
-			accuracy = my_rak12500_gnss.getHorizontalDOP();
-			has_pos = true;
+			MYLOG("GNSS", "Polling RAK12500");
+			if (g_ble_uart_is_connected)
+			{
+				g_ble_uart.print("Polling RAK12500\n");
+			}
+			if (my_rak12500_gnss.getGnssFixOk())
+			{
+				latitude = my_rak12500_gnss.getLatitude() / 100;
+				longitude = my_rak12500_gnss.getLongitude() / 100;
+				altitude = my_rak12500_gnss.getAltitude() / 1000;
+				accuracy = my_rak12500_gnss.getHorizontalDOP();
+				has_pos = true;
+			}
 		}
 		break;
 

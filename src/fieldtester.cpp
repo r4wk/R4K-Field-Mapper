@@ -165,6 +165,7 @@ void rxCounter()
     } else {
         rxCount = 0;
         txCount = 0;
+        rxCount++;
         sendToDisplay("Resetting RX/TX Beacon Count!");
     }
 }
@@ -183,6 +184,7 @@ void txCounter()
     } else {
         rxCount = 0;
         txCount = 0;
+        txCount++;
         sendToDisplay("Resetting RX/TX Beacon Count!");
     }
 }
@@ -455,6 +457,8 @@ void ftester_gps_fix(bool fix)
 
 /**
  * @brief Check what GNNS module to use
+ * All GNSS settings should go here for now
+ * These settings should probably be a PR to mapper base
  * 
  * @param type 
  */
@@ -464,6 +468,7 @@ void ftester_SetGPSType(bool type)
     if(type)
     {
         sendToDisplay("Initialized RAK12500");
+		my_rak12500_gnss.setHighPrecisionMode(false);
     } else {
         sendToDisplay("Initialized RAK1910");
     }
