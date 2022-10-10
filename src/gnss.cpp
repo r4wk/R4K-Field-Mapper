@@ -74,7 +74,7 @@ uint8_t init_gnss(void)
 		while (!Serial1)
 			;
 		MYLOG("GNSS", "Initialized RAK1910");
-		// Hook for Field Tester
+		/** Hook for Field Tester */
 		ftester_SetGPSType(false);
 		return RAK1910_GNSS;
 	}
@@ -87,7 +87,7 @@ uint8_t init_gnss(void)
  */
 bool poll_gnss(uint8_t gnss_option)
 {
-	// Hook for Field Tester
+	/** Hook for Field Tester */
 	ftester_GPSBusy(true);
 	time_t time_out = millis();
 	bool has_pos = false;
@@ -161,14 +161,14 @@ bool poll_gnss(uint8_t gnss_option)
 		break;
 
 	case RAK12500_GNSS:
-		MYLOG("GNSS", "Polling RAK12500");
-		if (g_ble_uart_is_connected)
-		{
-			g_ble_uart.print("Polling RAK12500\n");
-		}
-		// PR to base mapper (multi gnss try)
+		/** PR to base mapper (multi gnss try) */
 		if (my_rak12500_gnss.getGnssFixOk())
 		{
+			MYLOG("GNSS", "Polling RAK12500 (Has fix)");
+			if (g_ble_uart_is_connected)
+			{
+				g_ble_uart.print("Polling RAK12500 (Has fix)\n");
+			}
 			latitude = my_rak12500_gnss.getLatitude() / 100;
 			longitude = my_rak12500_gnss.getLongitude() / 100;
 			altitude = my_rak12500_gnss.getAltitude() / 1000;
@@ -177,13 +177,18 @@ bool poll_gnss(uint8_t gnss_option)
 		} else {
 			while ((millis() - time_out) < 10000 && !my_rak12500_gnss.getGnssFixOk())
 			{
-				MYLOG("GNSS", "Polling RAK12500");
+				MYLOG("GNSS", "Polling RAK12500 (Multi try)");
 				if (g_ble_uart_is_connected)
 				{
-					g_ble_uart.print("Polling RAK12500\n");
+					g_ble_uart.print("Polling RAK12500 (Multi try)\n");
 				}
 				if (my_rak12500_gnss.getGnssFixOk())
 				{
+					MYLOG("GNSS", "Polling RAK12500 (Aquired fix)");
+					if (g_ble_uart_is_connected)
+					{
+						g_ble_uart.print("Polling RAK12500 (Aquired fix)\n");
+					}
 					latitude = my_rak12500_gnss.getLatitude() / 100;
 					longitude = my_rak12500_gnss.getLongitude() / 100;
 					altitude = my_rak12500_gnss.getAltitude() / 1000;
@@ -211,7 +216,7 @@ bool poll_gnss(uint8_t gnss_option)
 		MYLOG("GNSS", "Alt: %d m", altitude);
 		MYLOG("GNSS", "Acy: %.2f ", accuracy / 100.0);
 
-		// Hook for Field Tester
+		/** Hook for Field Tester */
 		ftester_setGPSData(latitude, longitude);
 
 		if (g_ble_uart_is_connected)
@@ -254,7 +259,7 @@ bool poll_gnss(uint8_t gnss_option)
 
 	last_read_ok = false;
 	// my_rak1910_gnss.setMeasurementRate(1000);
-	// Hook for Field Tester
+	/** Hook for Field Tester */
 	ftester_GPSBusy(false);
 	return false;
 }

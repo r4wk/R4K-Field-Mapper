@@ -49,7 +49,7 @@ void send_delayed(TimerHandle_t unused);
  */
 void setup_app(void)
 {
-		// Called in the very beginning of setup
+	// Called in the very beginning of setup
 	/**************************************************************/
 	/**************************************************************/
 	/// \todo set g_enable_ble to true if you want to enable BLE
@@ -59,8 +59,8 @@ void setup_app(void)
 	/**************************************************************/
 	g_enable_ble = true;
 	api_set_version(1, 0, 2);
-	// Initalize Display here, went want info now!
-	// TODO: Can I init even sooner than this?
+	/** Initalize Display here, went want info now!
+	*	TODO: Can I init even sooner than this? */
 	ftester_init();
 
 }
@@ -118,7 +118,7 @@ bool init_app(void)
  */
 void app_event_handler(void)
 {
-	// Hook the Mapper firmwares event handler
+	/** Hook the Mapper firmwares event handler */
 	ftester_event_handler();
 
 	// Timer triggered event
@@ -207,7 +207,7 @@ void app_event_handler(void)
 					g_ble_uart.printf("Batt 2: %02X\n", g_mapper_data.batt_2);
 				}
 
-				// Hook for Field Tester
+				/** Hook for Field Tester */
 				ftester_tx_beacon();
 				
 				lmh_error_status result = send_lora_packet((uint8_t *)&g_mapper_data, MAPPER_DATA_LEN);
@@ -265,7 +265,7 @@ void app_event_handler(void)
 	{
 		g_task_event_type &= N_ACC_TRIGGER;
 
-		// Hook for Field Tester
+		/** Hook for Field Tester */
 		ftester_acc_event();
 
 		MYLOG("APP", "ACC triggered");
@@ -375,8 +375,8 @@ void lora_data_handler(void)
 		/**************************************************************/
 		g_task_event_type &= N_LORA_DATA;
 
-		// Hook LoRa Data Field Tester
-		// Event already exists
+		/** Hook LoRa Data Field Tester
+		*	Event already exists */
 		ftester_lora_data_handler();
 
 		MYLOG("APP", "Received package over LoRa");
