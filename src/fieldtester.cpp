@@ -75,18 +75,22 @@ void refreshDisplay(void)
         u8g2.drawStr(80, 5,  count.c_str());
 
         /** Draw battery level based on mv */
-        u8g2.setFont(u8g2_font_siji_t_6x10);
-        if(battLevel >= 55)
+        if(battLevel == 100)
         {
+            u8g2.setFont(u8g2_font_siji_t_6x10);
             u8g2.drawGlyph(115, 6, 0xe086);
-        } else if(battLevel >= 15)
+            u8g2.setFont(u8g2_font_micro_mr);
+        } else if(battLevel == 0) 
         {
-            u8g2.drawGlyph(115, 6, 0xe085);
-        } else
-        {
+            u8g2.setFont(u8g2_font_siji_t_6x10);
             u8g2.drawGlyph(115, 6, 0xe084);
+            u8g2.setFont(u8g2_font_micro_mr);
         }
-        u8g2.setFont(u8g2_font_micro_mr);
+        else
+        {
+            std::string battLevelD = std::to_string(battLevel) + "%";
+            u8g2.drawStr(110, 6, battLevelD.c_str());
+        }
 
         u8g2.drawLine(0, 6, 128, 6);
 
@@ -219,8 +223,7 @@ void parseJSON(std::string input)
             namess << hsName;
             std::string hsNameS = namess.str();
 
-            /** Build hot spot snr and set precision to 1
-            /*  i.e. 0.1 */
+            /** Build hot spot snr and set precision to 1, i.e. 0.1 */
             std::ostringstream snrss;
             snrss << std::fixed << std::setprecision(1) << hsSnr;
 
@@ -235,8 +238,7 @@ void parseJSON(std::string input)
             /** Get distance between tester and hot spot */
             distM = my_rak1910_gnss.distanceBetween(ftester_lat, ftester_long, hsLat, hsLong);
             distKM = distM / 1000.0;
-            /** If distance is less than 0.1km we just display
-           *    it as <0.1 */
+            /** If distance is less than 0.1km we just display it as <0.1 */
             if(distKM <= 0.1)
             {
                 distS = "<0.1";
@@ -335,8 +337,7 @@ void ftester_event_handler(void)
         if(g_join_result)
         {
             sendToDisplay("Joined Helium Network!");
-            /** Don't turn off screen until joined Helium
-            *   Bad for screen but usable for now */
+            /** Don't turn off screen until joined Helium */
             displayTimeoutTimer.begin(305137, ftester_display_sleep);
             displayTimeoutTimer.start();
             battTimer.begin(65317, ftester_updateBattLevel, NULL, true);
