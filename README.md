@@ -49,7 +49,7 @@ Once you have the R4K field mapper firmware flashed to the WisBlock/RAK Mapper a
 - I advise enabling muilti-buy/packet so that you can uplink to multiple hot spots. But with how downlinks work the RX wait time on the router isn't long enough to catch as many hot spots as I wish. Fortunately I've requested this to be adjustable so hopefully we will see that feature soon. 
 https://github.com/helium/router/issues/781
 
-- If you choose to use the RAK12500, you will lose some battery life as it consumes about twice as much as the RAK1910 during sleep. I've also found setting RX window delay to 2 seconds makes downlinks much more reliable vs the RAK1910. 
+- If you choose to use the RAK12500, you will lose some battery life as it consumes about twice as much as the RAK1910 during sleep. I've also found when using the RAK12500 setting RX window delay to 2 seconds makes downlinks much more reliable vs the RAK1910. 
 
 ![R4K_Front](https://user-images.githubusercontent.com/5049300/192627451-c3073dc9-255d-479a-8bbe-1ba905e77733.png)
 ![R4K_Side](https://user-images.githubusercontent.com/5049300/192627468-149abcb7-0308-4637-87a7-dd6e1e1a7511.png)
