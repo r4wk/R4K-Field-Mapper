@@ -38,6 +38,8 @@ bool ftester_gpsLock = false;
 bool ftester_busy = false;
 /** Is 12500 installed */
 bool israk12500 = false;
+/** Battery level uinion */
+batt_s ftester_batt_level;
 
 /** Instance for display object (RENDER UPSIDE DOWN) */
 U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R2);
@@ -236,8 +238,13 @@ void parseJSON(std::string input)
             std::string distS = "";
 
             /** Get distance between tester and hot spot */
-            distM = my_rak1910_gnss.distanceBetween(ftester_lat, ftester_long, hsLat, hsLong);
-            distKM = distM / 1000.0;
+            if(ftester_gpsLock)
+            {
+                distM = my_rak1910_gnss.distanceBetween(ftester_lat, ftester_long, hsLat, hsLong);
+                distKM = distM / 1000.0;
+            } else {
+                distKM = 0;
+            }
             /** If distance is less than 0.1km we just display it as <0.1 */
             if(distKM <= 0.1)
             {
@@ -456,6 +463,57 @@ void ftester_gps_fix(bool fix)
             sendToDisplay("Searching for GPS satellites.");
         }
         ftester_gpsLock = false;
+        // Send 0 packet so we can still test with no GPS fix
+        // This can cause mapper integration errors
+        sendToDisplay("Sending no GPS packet.");
+        // Get battery level
+        ftester_batt_level.batt16 = read_batt();
+        g_mapper_data.batt_1 = ftester_batt_level.batt8[0];
+        g_mapper_data.batt_2 = ftester_batt_level.batt8[1];
+		g_mapper_data.lat_1 = 0;
+		g_mapper_data.lat_2 = 0;
+		g_mapper_data.lat_3 = 0;
+		g_mapper_data.lat_4 = 0;
+
+		g_mapper_data.long_1 = 0;
+		g_mapper_data.long_2 = 0;
+		g_mapper_data.long_3 = 0;
+		g_mapper_data.long_4 = 0;
+
+		g_mapper_data.alt_1 = 0;
+		g_mapper_data.alt_2 = 0;
+
+		g_mapper_data.acy_1 = 0;
+		g_mapper_data.acy_2 = 0;
+        lmh_error_status result = send_lora_packet((uint8_t *)&g_mapper_data, MAPPER_DATA_LEN);
+        switch (result)
+        {
+        case LMH_SUCCESS:
+            MYLOG("APP", "Packet enqueued");
+            ftester_tx_beacon();
+            if (g_ble_uart_is_connected)
+            {
+                g_ble_uart.print("Packet enqueued\n");
+            }
+            /// \todo set a flag that TX cycle is running
+            lora_busy = true;
+            
+            break;
+        case LMH_BUSY:
+            MYLOG("APP", "LoRa transceiver is busy");
+            if (g_ble_uart_is_connected)
+            {
+                g_ble_uart.print("LoRa transceiver is busy\n");
+            }
+            break;
+        case LMH_ERROR:
+            MYLOG("APP", "Packet error, too big to send with current DR");
+            if (g_ble_uart_is_connected)
+            {
+                g_ble_uart.print("Packet error, too big to send with current DR\n");
+            }
+            break;
+        }
     }
 }
 

@@ -67,6 +67,7 @@ void ftester_acc_event(void);
 void ftester_setGPSData(int64_t lat, int64_t lon);
 void ftester_GPSBusy(bool busy);
 void ftester_SetGPSType(bool type);
+extern bool lora_busy;
 
 /** Examples for application events */
 #define ACC_TRIGGER 0b1000000000000000
