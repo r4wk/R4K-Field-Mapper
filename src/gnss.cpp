@@ -194,6 +194,7 @@ bool poll_gnss(uint8_t gnss_option)
 					altitude = my_rak12500_gnss.getAltitude() / 1000;
 					accuracy = my_rak12500_gnss.getHorizontalDOP();
 					has_pos = true;
+					break;
 				} 
 			}
 		}

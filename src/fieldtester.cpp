@@ -28,6 +28,8 @@ bool displayOn = true;
 SoftwareTimer displayTimeoutTimer;
 /** Timer to update battery level */
 SoftwareTimer battTimer;
+/** Timer to delay start of info */
+SoftwareTimer startTimer;
 /** Field tester lat/long */
 double ftester_lat = 0.0;
 double ftester_long = 0.0;
@@ -40,6 +42,10 @@ bool ftester_busy = false;
 bool israk12500 = false;
 /** Battery level uinion */
 batt_s ftester_batt_level;
+/** Pause normal tester display */
+bool pause_buffer = true;
+/** Should we send Zero Packet */
+bool zero_packet = true;
 
 /** Instance for display object (RENDER UPSIDE DOWN) */
 U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R2);
@@ -102,7 +108,7 @@ void refreshDisplay(void)
         {
             u8g2.drawStr(0, 13 + (y*6), displayBuffer[y].c_str());
         }
-        u8g2.sendBuffer();
+        if(!pause_buffer) { u8g2.sendBuffer(); }
     }
     ftester_busy = false;
 }
@@ -333,6 +339,18 @@ void ftester_updateBattLevel(TimerHandle_t unused)
 }
 
 /**
+ * @brief Delay info to display splash screen
+ * 
+ * @param unused 
+ */
+void ftester_delay_start(TimerHandle_t unused)
+{
+    pause_buffer = false;
+    /** Do this here to wake screen up right away */
+    sendToDisplay("Searching for GPS satellites.");
+}
+
+/**
  * @brief Field Testers event handler
  * 
  */
@@ -349,6 +367,8 @@ void ftester_event_handler(void)
             displayTimeoutTimer.start();
             battTimer.begin(65317, ftester_updateBattLevel, NULL, true);
             battTimer.start();
+            startTimer.begin(5000, ftester_delay_start, NULL, false);
+            startTimer.start();
         }
     }
 }
@@ -517,8 +537,13 @@ void ftester_gps_fix(bool fix)
         {
             sendToDisplay("Lost GPS fix.");
         } else {
-            sendToDisplay("Trying: No-GPS beacon sent.");
-            ftester_send_lora_zero();
+            if(zero_packet) 
+            { 
+                sendToDisplay("Trying: No-GPS beacon sent.");
+                ftester_send_lora_zero(); 
+            } else {
+                sendToDisplay("Searching for GPS satellites.");
+            }
         }
         ftester_gpsLock = false;
     }
@@ -541,7 +566,6 @@ void ftester_SetGPSType(bool type)
     } else {
         sendToDisplay("Initialized RAK1910");
     }
-    sendToDisplay("Searching for GPS satellites.");
 }
 
 /**
