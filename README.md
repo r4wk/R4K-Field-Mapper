@@ -36,7 +36,7 @@ If you don't want to make any custom changes to the firmware, follow these very 
 
 ## Code/PlatformIO
 
-If you'd like to make changes to the base firmware (not needed). You can follow this guide, except when you get to the part :
+If you'd like to make changes to the base firmware (not needed). You can follow this guide:
 
 - https://github.com/rakstars/WisBlock-RAK4631-Helium-Mapper/wiki/Make-a-Helium-Mapper-with-the-WisBlock#from-platformio
 
