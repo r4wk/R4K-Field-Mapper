@@ -36,9 +36,9 @@ If you don't want to make any custom changes to the firmware, follow these very 
 
 ## Code/PlatformIO
 
-If you'd like to make changes to the base firmware (not needed). You can follow this guide:
+If you'd like to make changes to the base firmware (not needed). You can follow this guide, except when you get to the part :
 
-https://github.com/RAKWireless/WisBlock/tree/master/PlatformIO/RAK4630
+- https://github.com/rakstars/WisBlock-RAK4631-Helium-Mapper/wiki/Make-a-Helium-Mapper-with-the-WisBlock#from-platformio
 
 ## Set up LoRa credentials/settings
 - I highly advise using WisBlock-ToolBox app, this allows you do connect your device to Helium right from your phone via Bluetooth (Android Only)
