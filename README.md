@@ -12,7 +12,7 @@
 ![r4k_oled_info](https://user-images.githubusercontent.com/5049300/180697646-bcd53024-a1a1-4088-8c95-0b9183925b27.png)
 
 ## What's needed
-- RAK5005-O
+- RAK5005-O/RAK19007
 - RAK4631
 - RAK1904
 - RAK1910/RAK12500
