@@ -165,6 +165,7 @@ bool poll_gnss(uint8_t gnss_option)
 		if (my_rak12500_gnss.getGnssFixOk())
 		{
 			MYLOG("GNSS", "Polling RAK12500 (Has fix)");
+			digitalToggle(LED_BUILTIN);
 			if (g_ble_uart_is_connected)
 			{
 				g_ble_uart.print("Polling RAK12500 (Has fix)\n");
@@ -178,6 +179,7 @@ bool poll_gnss(uint8_t gnss_option)
 			while ((millis() - time_out) < 10000 && !my_rak12500_gnss.getGnssFixOk())
 			{
 				MYLOG("GNSS", "Polling RAK12500 (Multi try)");
+				digitalToggle(LED_BUILTIN);
 				if (g_ble_uart_is_connected)
 				{
 					g_ble_uart.print("Polling RAK12500 (Multi try)\n");
