@@ -161,7 +161,9 @@ bool poll_gnss(uint8_t gnss_option)
 		break;
 
 	case RAK12500_GNSS:
-		/** PR to base mapper (multi gnss try) */
+		/** PR to base mapper (multi gnss try)
+		 * If we already have a fix, poll once
+		 */
 		if (my_rak12500_gnss.getGnssFixOk())
 		{
 			MYLOG("GNSS", "Polling RAK12500 (Has fix)");
@@ -176,7 +178,10 @@ bool poll_gnss(uint8_t gnss_option)
 			accuracy = my_rak12500_gnss.getHorizontalDOP();
 			has_pos = true;
 		} else {
-			while ((millis() - time_out) < 10000 && !my_rak12500_gnss.getGnssFixOk())
+			/** We don't have a fix so lets poll the GNSS module multiple times 
+			 * Break us out of the loop when a fix happens but make sure we update GNSS info
+			*/
+			while ((millis() - time_out) < 10000)
 			{
 				MYLOG("GNSS", "Polling RAK12500 (Multi try)");
 				digitalToggle(LED_BUILTIN);
