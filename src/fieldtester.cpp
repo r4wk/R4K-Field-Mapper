@@ -535,7 +535,15 @@ void ftester_gps_fix(bool fix)
     } else {
         if(ftester_gpsLock)
         {
-            sendToDisplay("Lost GPS fix.");
+            if(zero_packet) 
+            { 
+                sendToDisplay("Lost GPS fix.");
+                sendToDisplay("Trying: No-GPS beacon sent.");
+                ftester_send_lora_zero(); 
+            } else {
+                sendToDisplay("Lost GPS fix.");
+            }
+
         } else {
             if(zero_packet) 
             { 
@@ -562,6 +570,7 @@ void ftester_SetGPSType(bool type)
     if(type)
     {
         sendToDisplay("Initialized RAK12500");
+        /**TODO: Add to user menu */
 		my_rak12500_gnss.setHighPrecisionMode(false);
     } else {
         sendToDisplay("Initialized RAK1910");
