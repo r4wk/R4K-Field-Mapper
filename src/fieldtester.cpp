@@ -74,7 +74,12 @@ void refreshDisplay(void)
 
         /** Draw GPS sat fix count */
         u8g2.drawStr(38, 5, "(GPS)");
-        u8g2.drawStr(58, 5, std::to_string(ftester_satCount).c_str());
+        if(ftester_satCount <= 0)
+        {
+            u8g2.drawStr(58, 5, "-");
+        } else {
+            u8g2.drawStr(58, 5, std::to_string(ftester_satCount).c_str());
+        }
 
         /** Draw Helium Join Status
         *   RX/TX Count */
@@ -88,14 +93,11 @@ void refreshDisplay(void)
             u8g2.setFont(u8g2_font_siji_t_6x10);
             u8g2.drawGlyph(115, 6, 0xe086);
             u8g2.setFont(u8g2_font_micro_mr);
-        } else if(battLevel == 0) 
-        {
+        } else if(battLevel == 0) {
             u8g2.setFont(u8g2_font_siji_t_6x10);
             u8g2.drawGlyph(115, 6, 0xe084);
             u8g2.setFont(u8g2_font_micro_mr);
-        }
-        else
-        {
+        } else {
             std::string battLevelD = std::to_string(battLevel) + "%";
             u8g2.drawStr(110, 6, battLevelD.c_str());
         }
@@ -543,7 +545,6 @@ void ftester_gps_fix(bool fix)
             } else {
                 sendToDisplay("Lost GPS fix.");
             }
-
         } else {
             if(zero_packet) 
             { 
