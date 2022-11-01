@@ -377,6 +377,9 @@ void ftester_delay_start(TimerHandle_t unused)
 {
     pause_buffer = false;
     /** Do this here to wake screen up right away */
+    std::string networkInfo = "Datarate:" + std::to_string(g_lorawan_settings.data_rate) + 
+                              " Subband:" + std::to_string(g_lorawan_settings.subband_channels);
+    sendToDisplay(networkInfo);
     sendToDisplay("Searching for GPS satellites.");
 }
 
@@ -391,7 +394,8 @@ void ftester_event_handler(void)
         g_task_event_type &= N_LORA_JOIN_FIN;
         if(g_join_result)
         {
-            sendToDisplay("Joined Helium Network!");
+            std::string region = region_names[g_lorawan_settings.lora_region];
+            sendToDisplay("Joined Helium Network! (" + region + ")");
             /** Don't turn off screen until joined Helium */
             displayTimeoutTimer.begin(305137, ftester_display_sleep);
             displayTimeoutTimer.start();
