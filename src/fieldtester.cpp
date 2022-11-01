@@ -46,6 +46,10 @@ batt_s ftester_batt_level;
 bool pause_buffer = true;
 /** Should we send Zero Packet */
 bool zero_packet = true;
+/** US915 DF->SF Look up*/
+int8_t US915_SF[] = {10, 9, 8, 7, 8, 0, 0, 0, 12, 11, 8, 7, 0, 0};
+/** EU868 DF->SF Look up*/
+int8_t EU868_SF[] = {12, 11, 10, 9, 8, 7, 7};
 
 /** Instance for display object (RENDER UPSIDE DOWN) */
 U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R2);
@@ -82,7 +86,8 @@ void refreshDisplay(void)
         }
 
         /** Draw Helium Join Status
-        *   RX/TX Count */
+        *   RX/TX Count
+        */
         u8g2.drawStr(68, 5, "(H)");
         std::string count = std::to_string(rxCount) + "/" + std::to_string(txCount);
         u8g2.drawStr(80, 5,  count.c_str());
@@ -202,6 +207,26 @@ void txCounter()
 }
 
 /**
+ * @brief Convert Regional Data Rate to Spreading Factor
+ * Only one differnt is US915, so if in any other region, use EU lookup
+ * 
+ * @param reg Regional code
+ * @return int8_t Return spread factor
+ */
+int8_t dataRateToSF(int8_t reg)
+{
+    switch (reg)
+    {
+        case 8:
+            return US915_SF[g_lorawan_settings.data_rate];
+            break;
+        default:
+            EU868_SF[g_lorawan_settings.data_rate];
+            break;
+    }
+}
+
+/**
  * @brief Parse incoming JSON LoRaWAN data from LLIS
  * 
  * @param input JSON format
@@ -283,9 +308,12 @@ void parseJSON(std::string input)
                 hsNameS.erase(pos+1, chunk);
             }
 
+            /** Get Spread Factor from region setting data rate */
+            int8_t spreadFactor = dataRateToSF(g_lorawan_settings.lora_region);
+
             /** Final strings for display, ready to send to OLED */
             std::string displayName = std::to_string(rxCount) + "." + hsNameS + " " + distS + "km";
-            std::string signalInfo = "RSSI:" + rxrssi + "/" + std::to_string(hsRssi) + " SNR:" + rxsnr + "/" + snrss.str();
+            std::string signalInfo = "RSSI:" + rxrssi + "/" + std::to_string(hsRssi) + " SNR:" + rxsnr + "/" + snrss.str() + " (SF" + std::to_string(spreadFactor) + ")";
 
             sendToDisplay(displayName);
             sendToDisplay(signalInfo);
