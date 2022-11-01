@@ -221,7 +221,7 @@ int8_t dataRateToSF(int8_t reg)
             return US915_SF[g_lorawan_settings.data_rate];
             break;
         default:
-            EU868_SF[g_lorawan_settings.data_rate];
+            return EU868_SF[g_lorawan_settings.data_rate];
             break;
     }
 }
