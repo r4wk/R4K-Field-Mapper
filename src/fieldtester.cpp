@@ -208,7 +208,7 @@ void txCounter()
 
 /**
  * @brief Convert Regional Data Rate to Spreading Factor
- * Only one differnt is US915, so if in any other region, use EU lookup
+ * Only one different is US915, so if in any other region, use EU lookup
  * 
  * @param reg Regional code
  * @return int8_t Return spread factor
@@ -313,7 +313,7 @@ void parseJSON(std::string input)
 
             /** Final strings for display, ready to send to OLED */
             std::string displayName = std::to_string(rxCount) + "." + hsNameS + " " + distS + "km";
-            std::string signalInfo = "RSSI:" + rxrssi + "/" + std::to_string(hsRssi) + " SNR:" + rxsnr + "/" + snrss.str() + " (SF" + std::to_string(spreadFactor) + ")";
+            std::string signalInfo = "RSSI:" + rxrssi + "/" + std::to_string(hsRssi) + " SNR:" + rxsnr + "/" + snrss.str() + " SF:" + std::to_string(spreadFactor);
 
             sendToDisplay(displayName);
             sendToDisplay(signalInfo);
@@ -558,7 +558,6 @@ void ftester_gps_fix(bool fix)
     } else {
         ftester_satCount = my_rak1910_gnss.satellites.value();
     }
-
 
     if(fix)
     {
