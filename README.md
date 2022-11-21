@@ -9,7 +9,7 @@
 - Will also displays distance to hot spot in KM.
 - Show's how many satellites you have a fix on. Will only send a beacon when you have a good GPS fix (usually 4 or more satellites). 
 
-![r4k_oled_info](https://user-images.githubusercontent.com/5049300/180697646-bcd53024-a1a1-4088-8c95-0b9183925b27.png)
+![r4k_oled_info](https://user-images.githubusercontent.com/5049300/203165463-bfe2f08c-3350-417c-97ac-17a42c21b061.png)
 
 ## What's needed
 - RAK5005-O/RAK19007
