@@ -59,10 +59,6 @@ void setup_app(void)
 	/**************************************************************/
 	g_enable_ble = true;
 	api_set_version(1, 0, 2);
-	/** Initalize Display here, went want info now!
-	*	TODO: Can I init even sooner than this? */
-	ftester_init();
-
 }
 
 /**
@@ -104,6 +100,11 @@ bool init_app(void)
 	}
 	// Set to 1/2 of programmed send interval or 30 seconds
 	delayed_sending.begin(min_delay, send_delayed, NULL, false);
+
+	/** Field Tester initalize display here 
+	 * So we can get most up to date info
+	*/
+	ftester_init();
 
 	// Power down GNSS module
 	// pinMode(WB_IO2, OUTPUT);

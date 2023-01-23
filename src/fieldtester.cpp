@@ -402,7 +402,7 @@ void ftester_event_handler(void)
             displayTimeoutTimer.start();
             battTimer.begin(65317, ftester_updateBattLevel, NULL, true);
             battTimer.start();
-            startTimer.begin(5000, ftester_delay_start, NULL, false);
+            startTimer.begin(5317, ftester_delay_start, NULL, false);
             startTimer.start();
         }
     }
@@ -631,9 +631,10 @@ void ftester_init(void)
     u8g2.begin();
     u8g2.setFont(u8g2_font_micro_mr);
     u8g2.drawXBM(0, 0, rak_width, rak_height, rak_bits);
-    u8g2.drawStr(74, 10, ver.c_str());
-    u8g2.drawStr(74, 16, "Field Tester");
-    u8g2.drawStr(74, 28, "Alpha Build");
-    u8g2.drawStr(38, 64, "Joining Helium Network!");
+    u8g2.drawStr(68, 10, ver.c_str());
+    u8g2.drawStr(68, 16, "Field Tester");
+    u8g2.drawStr(68, 22, "Alpha Build");
+    std::string joinTrials = "Joining Helium, retries: " + std::to_string(g_lorawan_settings.join_trials);
+    u8g2.drawStr(0, 64, joinTrials.c_str());
     u8g2.sendBuffer();
 }
