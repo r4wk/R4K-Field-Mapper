@@ -30,6 +30,8 @@ SoftwareTimer displayTimeoutTimer;
 SoftwareTimer battTimer;
 /** Timer to delay start of info */
 SoftwareTimer startTimer;
+/** Timer to refresh splash screen */
+SoftwareTimer splashTimer;
 /** Field tester lat/long */
 double ftester_lat = 0.0;
 double ftester_long = 0.0;
@@ -50,9 +52,21 @@ bool zero_packet = true;
 int8_t US915_SF[] = {10, 9, 8, 7, 8, 0, 0, 0, 12, 11, 8, 7, 0, 0};
 /** EU868 DF->SF Look up*/
 int8_t EU868_SF[] = {12, 11, 10, 9, 8, 7, 7};
+/** Current join retries*/
+uint16_t retries = 0;
+/* Set the OLED driver that you are using to 1, and the other to 0 */
+#define SSD1306 1
+#define SSD1309 0
 
+#if SSD1306
 /** Instance for display object (RENDER UPSIDE DOWN) */
 U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R2);
+#endif
+
+#if SSD1309
+/** Instance for display object (RENDER UPRIGHT, AND NO RESET PIN) */
+U8G2_SSD1309_128X64_NONAME0_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE);
+#endif
 
 /**
  * @brief Redraw info bar and display buffer with up to date info
@@ -391,6 +405,8 @@ void ftester_event_handler(void)
         g_task_event_type &= N_LORA_JOIN_FIN;
         if(g_join_result)
         {
+            /** Stop splash screen tick */
+            splashTimer.stop();
             /** Display some LoRa network info */
             std::string region = region_names[g_lorawan_settings.lora_region];
             sendToDisplay("Joined Helium Network! (" + region + ")");
@@ -621,11 +637,7 @@ void ftester_GPSBusy(bool busy)
     ftester_busy = busy;
 }
 
-/**
- * @brief Initialize Display here
- * 
- */
-void ftester_init(void)
+void drawSplash(TimerHandle_t unused)
 {
     ver = "R4K v" + std::to_string(SW_VERSION_1) + "." + std::to_string(SW_VERSION_2) + "a";
     u8g2.begin();
@@ -634,7 +646,21 @@ void ftester_init(void)
     u8g2.drawStr(68, 10, ver.c_str());
     u8g2.drawStr(68, 16, "Field Tester");
     u8g2.drawStr(68, 22, "Alpha Build");
-    std::string joinTrials = "Joining Helium, retries: " + std::to_string(g_lorawan_settings.join_trials);
+    std::string joinTrials = "Joining Helium, retries: " + std::to_string(retries) + "/" + std::to_string(g_lorawan_settings.join_trials);
     u8g2.drawStr(0, 64, joinTrials.c_str());
     u8g2.sendBuffer();
+    retries++;
+    if(retries >= g_lorawan_settings.join_trials) { splashTimer.stop(); }
+}
+
+/**
+ * @brief Initialize Display here
+ * 
+ */
+void ftester_init(void)
+{
+    drawSplash(NULL);
+    /** Hardcode to 30s as join interval is not implemented */
+    splashTimer.begin(30000, drawSplash, NULL, true);
+    splashTimer.start();
 }
