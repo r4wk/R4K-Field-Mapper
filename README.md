@@ -65,7 +65,7 @@ Once you have the R4K field mapper firmware flashed to the WisBlock/RAK Mapper a
 - To create an HTTP integration in a Helium Console:
   Click on Integrations, select Add New Integration, select HTTP. Then, copy and paste the following Endpoint URL:
 
-  ```http://r4wk.net/lora/ingest.php```
+  ```https://ingest.r4wk.net/ingest.php```
 
 - Finally, give a name to the integration and click on the Add Integration button.
 
